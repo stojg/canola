@@ -1,8 +1,9 @@
 precision mediump float;
-attribute vec2 position;
-uniform float angle;
+attribute vec3 position, normal;
+uniform mat4 projection, view, model;
+varying vec3 fragNormal, fragPosition;
 void main() {
-    gl_Position = vec4(
-    cos(angle) * position.x + sin(angle) * position.y,
-    -sin(angle) * position.x + cos(angle) * position.y, 0, 1);
+    fragNormal = normal;
+    fragPosition = position;
+    gl_Position = projection * view * model * vec4(position, 1.0);
 }

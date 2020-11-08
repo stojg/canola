@@ -2,11 +2,11 @@ import REGL from "regl"
 import {createCamera} from './lib/camera'
 
 import bunny from 'bunny'
+import plane from './models/plane'
 import normals from 'angle-normals'
 import {mat4, vec3} from "gl-matrix"
 import {FPSControls} from "./lib/controls"
 
-// https://sites.google.com/site/letsmakeavoxelengine/home/basic-block-rendering
 const regl = REGL({
     attributes: {
         antialias: true
@@ -14,6 +14,7 @@ const regl = REGL({
 })
 
 const controls = new FPSControls(regl._gl.canvas as HTMLCanvasElement)
+const camera = createCamera(regl, controls, {position: vec3.fromValues(0, 10, 50)})
 
 const loadShaders = (fname: string, vname: string) => {
     const f = fetch(`/shaders/${fname}.fsh`).then(r => r.text())
@@ -21,11 +22,32 @@ const loadShaders = (fname: string, vname: string) => {
     return Promise.all([f, v])
 }
 
-const camera = createCamera(regl, controls, {position: vec3.fromValues(0, 10, 100)})
+const createModel = (position : vec3, scale : number): REGL.Mat4 => {
+    const m = mat4.identity(new Float32Array(16))
+    mat4.translate(m, m, position)
+    mat4.scale(m, m, [scale, scale, scale])
+    return m as REGL.Mat4
+}
+
+const bunnyProps = [{
+    model: createModel(vec3.fromValues(0,0,0), 1),
+    color: [0.0, 0.0, 0.8],
+},{
+    model: createModel(vec3.fromValues(10,0,10), 1),
+    color: [0.8, 0.0, 0.0],
+},{
+    model: createModel(vec3.fromValues(-10,0,10), 1),
+    color: [0.8, 0.8, 0.8],
+},{
+    model: createModel(vec3.fromValues(-5,0,-10), 1),
+    color: [0.0, 0.8, 0.8],
+}]
 
 interface MeshUniforms {
     model: REGL.Mat4
     color: REGL.Vec3
+    'lights[0].color': REGL.Vec3
+    'lights[0].position': REGL.Vec3
 }
 
 interface MeshAttributes {
@@ -33,54 +55,24 @@ interface MeshAttributes {
     normal: REGL.Vec3[]
 }
 
-const bunnyProps: MeshUniforms[] = [{
-    model: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1],
-    color: [0.0, 0.0, 0.8]
-},{
-    model: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, 10, 0, 10, 1],
-    color: [0.8, 0.0, 0.0]
-},{
-    model: [1, 0, 0, 0, 0, 1, 0, 0, 0, 0, 1, 0, -10, 0, 10, 1],
-    color: [0.8, 0.8, 0.8]
-}]
-
-const planePosition : REGL.Vec3[] = []
-planePosition.push([-0.5, 0.0, -0.5])
-planePosition.push([+0.5, 0.0, -0.5])
-planePosition.push([-0.5, 0.0, +0.5])
-planePosition.push([+0.5, 0.0, +0.5])
-const planeNormal : REGL.Vec3[] = []
-planeNormal.push([0.0, 1.0, 0.0])
-planeNormal.push([0.0, 1.0, 0.0])
-planeNormal.push([0.0, 1.0, 0.0])
-planeNormal.push([0.0, 1.0, 0.0])
-const planeElements : REGL.Vec3[] = []
-planeElements.push([3, 1, 0])
-planeElements.push([0, 2, 3])
-
-function createModel (position : vec3, scale : vec3) : REGL.Mat4 {
-    const m = mat4.identity(new Float32Array(16))
-    mat4.translate(m, m, position)
-    mat4.scale(m, m, scale)
-    return m as REGL.Mat4
-}
-
 const planeDraw = loadShaders('plane', 'plane').then(([f, v]) => {
     return regl<MeshUniforms, MeshAttributes>({
         frag: f, vert: v,
         attributes: {
-            position: planePosition,
-            normal: planeNormal
+            position: plane.positions,
+            normal: plane.normals
         },
         uniforms: {
-            model: () => createModel(vec3.fromValues(0,0,0), vec3.fromValues(200,200,200)),
-            color: [0.9, 0.9, 0.9],
+            model: () => createModel(vec3.fromValues(0,0,0), 200),
+            color: [0.1, 0.1, 0.1],
+            'lights[0].color': [1, 1, 1],
+            'lights[0].position': [10, 10, 10],
         },
-        elements: planeElements
+        elements: plane.cells
     })
 })
 
-const bunnyDraw = loadShaders("bunny", "bunny").then(([f, v]) => {
+const bunnyDraw = loadShaders("main", "main").then(([f, v]) => {
     return regl<MeshUniforms, MeshAttributes>({
         frag: f, vert: v,
         attributes: {
@@ -90,6 +82,8 @@ const bunnyDraw = loadShaders("bunny", "bunny").then(([f, v]) => {
         uniforms: {
             model: regl.prop<MeshUniforms, 'model'>('model'),
             color: regl.prop<MeshUniforms, 'color'>("color"),
+            'lights[0].color': [1, 1, 1],
+            'lights[0].position': [10, 10, 10],
         },
         elements: bunny.cells,
     })
@@ -104,9 +98,4 @@ Promise.all([planeDraw, bunnyDraw]).then((p) => {
         })
     })
 })
-
-/**
- *
- */
-
 
