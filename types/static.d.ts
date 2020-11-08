@@ -1,6 +1,15 @@
 /* Use this file to declare any custom file extensions for importing */
 /* Use this folder to also add/extend a package d.ts file, if needed. */
 
+declare module 'mouse-wheel'
+declare module 'mouse-change'
+declare module 'gl-mat4'
+declare module 'gl-mat4/perspective'
+declare module 'gl-mat4/lookAt'
+declare module 'gl-quat/identity'
+declare module 'bunny'
+declare module 'angle-normals'
+
 /* CSS MODULES */
 declare module '*.module.css' {
   const classes: { [key: string]: string };
