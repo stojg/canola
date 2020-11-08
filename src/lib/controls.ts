@@ -34,14 +34,11 @@ export class FPSControls extends Controls {
         window.addEventListener('keyup', this.onKeyUp, false)
         this._canvas = canvas
         this.initPointerLock()
-    }
-
-    onMouseChange(callback: MouseChangeCallback) {
-        return mouseChange(callback)
-    }
-
-    onMouseWheel(callback: MouseWheelCallback) {
-        return mouseWheel(callback)
+        mouseChange( (buttons: any, x: number, y: number, mods: MetaButtons) => {
+            if (this.pointerLocked && buttons & 2) {
+                this.exitPointerlock()
+            }
+        })
     }
 
     onKeyDown(ev : KeyboardEvent) {

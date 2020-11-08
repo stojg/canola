@@ -43,11 +43,7 @@ export class Transform {
         this.dirty = true
     }
 
-    rotate(a : quat) {
-        quat.mul(this.rotation, this.rotation, a)
-        this.dirty = true
-    }
-
+    // stable XY rotation that avoids 'creeping' roll
     rotateXY(x : number, y : number) {
         // Pitch Locally, Yaw Globally
         const tmp = quat.create()
@@ -55,21 +51,6 @@ export class Transform {
         quat.mul(this.rotation, tmp, this.rotation)
         quat.setAxisAngle(tmp, [1,0,0], y)
         quat.mul(this.rotation, this.rotation, tmp)
-        this.dirty = true
-    }
-
-    rotateX(rad : number) {
-        quat.rotateX(this.rotation, this.rotation, rad)
-        this.dirty = true
-    }
-
-    rotateY(rad : number) {
-        quat.rotateY(this.rotation,this.rotation, rad)
-        this.dirty = true
-    }
-
-    rotateZ(rad : number) {
-        quat.rotateZ(this.rotation,this.rotation, rad)
         this.dirty = true
     }
 

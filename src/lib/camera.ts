@@ -28,37 +28,21 @@ export function createCamera(regl: REGL.Regl, controls: FPSControls, props: Came
         view: mat4.identity(new Float32Array(16)),
         projection: mat4.identity(new Float32Array(16)),
         up: new Float32Array(props.up || [0, 1, 0]),
-        yaw: 0,
-        pitch: 0,
+        yawChange: 0,
+        pitchChange: 0,
         pointerLocked: false
     }
 
-
-
-
-    function clamp(x: number, lo: number, hi: number) {
-        return Math.min(Math.max(x, lo), hi)
+    function lerp(a: number, b: number, amount : number ) : number {
+        return a * (1 - amount) + b * amount
     }
 
-    controls.onMouseChange((buttons: any, x: number, y: number, mods: MetaButtons) => {
-        if (!controls.pointerLocked) {
-            return
-        }
-
-        if (buttons & 2) {
-            controls.exitPointerlock()
-            return
-        }
-    })
-
     function look() {
-        const ptrSensitivity = 0.01
+        const ptrSensitivity = 0.005
         const ptr = controls.pointerMovement()
-
-        cameraState.yaw = ptr[0] * ptrSensitivity
-        cameraState.pitch = ptr[1] * ptrSensitivity
-
-        cameraState.transform.rotateXY(-cameraState.yaw, -cameraState.pitch)
+        cameraState.yawChange = lerp(cameraState.yawChange, ptr[0] * ptrSensitivity,  0.5)
+        cameraState.pitchChange = lerp(cameraState.pitchChange, ptr[1] * ptrSensitivity,  0.5)
+        cameraState.transform.rotateXY(-cameraState.yawChange, -cameraState.pitchChange)
     }
 
     function move() {
@@ -83,16 +67,9 @@ export function createCamera(regl: REGL.Regl, controls: FPSControls, props: Came
         const sensitivity = 0.5
         vec3.scale(move, move, sensitivity)
         cameraState.transform.addPosition(move)
-
-
     }
 
-    function update() {
-        cameraState.transform.update()
-
-        move()
-        look()
-
+    function view() {
         // conjugate rotation because the world should appear to rotate opposite to the camera's rotation.
         const rotation: quat = quat.create()
         mat4.getRotation(rotation, cameraState.transform.transformation)
@@ -112,6 +89,13 @@ export function createCamera(regl: REGL.Regl, controls: FPSControls, props: Came
         mat4.multiply(cameraState.view, cameraRotation, cameraTranslation)
     }
 
+    function update() {
+        look()
+        move()
+        cameraState.transform.update()
+        view()
+    }
+
     const injectContext = regl({
         context: Object.assign({}, cameraState, {
             projection: function (ctx: REGL.DefaultContext) {
@@ -129,6 +113,5 @@ export function createCamera(regl: REGL.Regl, controls: FPSControls, props: Came
         update()
         injectContext(block)
     }
-
     return render
 }
