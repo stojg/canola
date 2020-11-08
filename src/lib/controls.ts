@@ -1,5 +1,4 @@
 import mouseChange from "mouse-change"
-import mouseWheel from "mouse-wheel"
 import {vec2} from "gl-matrix"
 
 class Controls {
@@ -11,14 +10,6 @@ export interface MetaButtons {
     alt: boolean
     control: boolean
     meta: boolean
-}
-
-export interface MouseChangeCallback {
-    (buttons: any, x: number, y: number, mods: MetaButtons): void
-}
-
-export interface MouseWheelCallback {
-    (buttons: any, x: number, y: number): void
 }
 
 export class FPSControls extends Controls {
@@ -63,7 +54,6 @@ export class FPSControls extends Controls {
 
     exitPointerlock() {
         document.exitPointerLock()
-        console.log("eh?")
     }
 
     private initPointerLock() {

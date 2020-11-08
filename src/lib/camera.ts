@@ -1,7 +1,7 @@
 import type REGL from "regl"
-import {mat4, quat, vec3} from 'gl-matrix'
+import {glMatrix, mat4, quat, vec3} from 'gl-matrix'
 import {Transform} from "./transform"
-import type {FPSControls, MetaButtons} from "./controls"
+import type {FPSControls} from "./controls"
 
 interface CameraProps {
     up?: REGL.Vec3,
@@ -10,32 +10,21 @@ interface CameraProps {
     rotation?: quat
 }
 
-class Physics {
-    velocity: vec3 = vec3.create()
-    rotation: quat = quat.identity(new Float32Array(4))
-
-    constructor() {
-    }
-}
-
-
 export function createCamera(regl: REGL.Regl, controls: FPSControls, props: CameraProps) {
     const cameraState = {
         transform: props.transform || new Transform({
             position: props.position,
             rotation: props.rotation,
         }),
-        view: mat4.identity(new Float32Array(16)),
-        projection: mat4.identity(new Float32Array(16)),
-        up: new Float32Array(props.up || [0, 1, 0]),
         yawChange: 0,
         pitchChange: 0,
-        pointerLocked: false
+        pointerLocked: false,
+        projection: mat4.identity(new Float32Array(16)),
+        up: new Float32Array(props.up || [0, 1, 0]),
+        view: mat4.identity(new Float32Array(16)),
     }
 
-    function lerp(a: number, b: number, amount : number ) : number {
-        return a * (1 - amount) + b * amount
-    }
+    const uniforms = ['view', 'projection']
 
     function look() {
         const ptrSensitivity = 0.005
@@ -74,17 +63,15 @@ export function createCamera(regl: REGL.Regl, controls: FPSControls, props: Came
         const rotation: quat = quat.create()
         mat4.getRotation(rotation, cameraState.transform.transformation)
         quat.conjugate(rotation, rotation)
-
         // similar, the translation is inverted because the world appears to move opposite to the camera's movement.
         const translation = vec3.create()
         mat4.getTranslation(translation, cameraState.transform.transformation)
         vec3.negate(translation, translation)
-
+        // convert from whatever it is back into mat4
         const cameraRotation = mat4.create()
         mat4.fromQuat(cameraRotation, rotation)
         const cameraTranslation = mat4.create()
         mat4.fromTranslation(cameraTranslation, translation)
-
         // now we can set the view
         mat4.multiply(cameraState.view, cameraRotation, cameraTranslation)
     }
@@ -97,15 +84,15 @@ export function createCamera(regl: REGL.Regl, controls: FPSControls, props: Came
     }
 
     const injectContext = regl({
-        context: Object.assign({}, cameraState, {
-            projection: function (ctx: REGL.DefaultContext) {
-                return mat4.perspective(cameraState.projection, Math.PI / 4.0, ctx.viewportWidth / ctx.viewportHeight, 0.01, 1000.0)
-            }
+        context: Object.assign({}, cameraState,{
+            projection: (ctx: REGL.DefaultContext) => mat4.perspective(cameraState.projection, glMatrix.toRadian(80), ctx.viewportWidth / ctx.viewportHeight, 0.01, 1000.0)
         }),
-        uniforms: Object.keys(cameraState).reduce((accumulator: {}, name: string) => {
-            // @ts-ignore
-            accumulator[name] = regl.context(name)
-            return accumulator
+        uniforms: Object.keys(cameraState).reduce((res: {}, name: string) => {
+                if (uniforms.includes(name)) {
+                    // @ts-ignore
+                    res[name] = regl.context(name)
+                }
+                return res
         }, {})
     })
 
@@ -114,4 +101,8 @@ export function createCamera(regl: REGL.Regl, controls: FPSControls, props: Came
         injectContext(block)
     }
     return render
+}
+
+function lerp(a: number, b: number, amount : number ) : number {
+    return a * (1 - amount) + b * amount
 }
