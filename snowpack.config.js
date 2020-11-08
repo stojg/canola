@@ -1,7 +1,7 @@
 module.exports = {
   mount: {
     public: '/',
-    src: '/_dist_',
+    src: '/dist',
   },
   plugins: ['@snowpack/plugin-typescript'],
   install: [
@@ -9,6 +9,7 @@ module.exports = {
   ],
   installOptions: {
     installTypes: true,
+    dest: "web",
   },
   devOptions: {
     /* ... */
@@ -17,7 +18,8 @@ module.exports = {
     out: "docs",
     clean: true,
     sourceMaps: true,
-    baseUrl: "https://stojg.github.io/canola/"
+    baseUrl: "https://stojg.github.io/canola/",
+    webModulesUrl: "web",
   },
   proxy: {
     /* ... */

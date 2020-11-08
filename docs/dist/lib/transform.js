@@ -1,4 +1,4 @@
-import {mat4, quat, vec3} from "../../web_modules/gl-matrix.js";
+import {mat4, quat, vec3} from "../../web/gl-matrix.js";
 export class Transform {
   constructor(props) {
     this._transformation = mat4.create();

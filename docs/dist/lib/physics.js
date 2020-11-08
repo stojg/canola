@@ -1,4 +1,4 @@
-import {quat, vec3} from "../../web_modules/gl-matrix.js";
+import {quat, vec3} from "../../web/gl-matrix.js";
 export class Physics {
   constructor() {
     this.velocity = vec3.create();

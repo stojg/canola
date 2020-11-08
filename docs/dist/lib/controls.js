@@ -1,5 +1,5 @@
-import mouseChange from "../../web_modules/mouse-change.js";
-import {vec2} from "../../web_modules/gl-matrix.js";
+import mouseChange from "../../web/mouse-change.js";
+import {vec2} from "../../web/gl-matrix.js";
 class Controls {
 }
 export class FPSControls extends Controls {

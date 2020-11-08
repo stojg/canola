@@ -1,9 +1,9 @@
-import REGL from "../web_modules/regl.js";
+import REGL from "../web/regl.js";
 import {createCamera} from "./lib/camera.js";
-import bunny2 from "../web_modules/bunny.js";
+import bunny2 from "../web/bunny.js";
 import plane2 from "./models/plane.js";
-import normals from "../web_modules/angle-normals.js";
-import {mat4, vec3} from "../web_modules/gl-matrix.js";
+import normals from "../web/angle-normals.js";
+import {mat4, vec3} from "../web/gl-matrix.js";
 import {FPSControls} from "./lib/controls.js";
 const regl2 = REGL({
   attributes: {

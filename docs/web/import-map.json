@@ -1,0 +1,9 @@
+{
+  "imports": {
+    "angle-normals": "./angle-normals.js",
+    "bunny": "./bunny.js",
+    "gl-matrix": "./gl-matrix.js",
+    "mouse-change": "./mouse-change.js",
+    "regl": "./regl.js"
+  }
+}

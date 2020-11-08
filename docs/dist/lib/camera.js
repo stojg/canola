@@ -1,4 +1,4 @@
-import {glMatrix, mat4, quat, vec3} from "../../web_modules/gl-matrix.js";
+import {glMatrix, mat4, quat, vec3} from "../../web/gl-matrix.js";
 import {Transform} from "./transform.js";
 export function createCamera(regl, controls, props) {
   const cameraState = {
