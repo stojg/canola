@@ -17,6 +17,7 @@ module.exports = {
     out: "docs",
     clean: true,
     sourceMaps: true,
+    baseUrl: "https://stojg.github.io/canola/"
   },
   proxy: {
     /* ... */
