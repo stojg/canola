@@ -19,8 +19,8 @@ const camera = createCamera(regl, controls, {
 })
 
 const loadShaders = (fname: string, vname: string) => {
-  const f = fetch(`/shaders/${fname}.fsh`).then((r) => r.text())
-  const v = fetch(`/shaders/${vname}.vsh`).then((r) => r.text())
+  const f = fetch(`shaders/${fname}.fsh`).then((r) => r.text())
+  const v = fetch(`shaders/${vname}.vsh`).then((r) => r.text())
   return Promise.all([f, v])
 }
 
