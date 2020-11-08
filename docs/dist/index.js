@@ -15,8 +15,8 @@ const camera2 = createCamera(regl2, controls2, {
   position: vec3.fromValues(0, 10, 50)
 });
 const loadShaders = (fname, vname) => {
-  const f = fetch(`/shaders/${fname}.fsh`).then((r) => r.text());
-  const v = fetch(`/shaders/${vname}.vsh`).then((r) => r.text());
+  const f = fetch(`shaders/${fname}.fsh`).then((r) => r.text());
+  const v = fetch(`shaders/${vname}.vsh`).then((r) => r.text());
   return Promise.all([f, v]);
 };
 const createModel = (position, scale) => {
