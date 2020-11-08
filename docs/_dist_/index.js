@@ -11,7 +11,9 @@ const regl2 = REGL({
   }
 });
 const controls2 = new FPSControls(regl2._gl.canvas);
-const camera2 = createCamera(regl2, controls2, {position: vec3.fromValues(0, 10, 50)});
+const camera2 = createCamera(regl2, controls2, {
+  position: vec3.fromValues(0, 10, 50)
+});
 const loadShaders = (fname, vname) => {
   const f = fetch(`/shaders/${fname}.fsh`).then((r) => r.text());
   const v = fetch(`/shaders/${vname}.vsh`).then((r) => r.text());
@@ -23,19 +25,24 @@ const createModel = (position, scale) => {
   mat4.scale(m, m, [scale, scale, scale]);
   return m;
 };
-const bunnyProps = [{
-  model: createModel(vec3.fromValues(0, 0, 0), 1),
-  color: [0, 0, 0.8]
-}, {
-  model: createModel(vec3.fromValues(10, 0, 10), 1),
-  color: [0.8, 0, 0]
-}, {
-  model: createModel(vec3.fromValues(-10, 0, 10), 1),
-  color: [0.8, 0.8, 0.8]
-}, {
-  model: createModel(vec3.fromValues(-5, 0, -10), 1),
-  color: [0, 0.8, 0.8]
-}];
+const bunnyProps = [
+  {
+    model: createModel(vec3.fromValues(0, 0, 0), 1),
+    color: [0, 0, 0.8]
+  },
+  {
+    model: createModel(vec3.fromValues(10, 0, 10), 1),
+    color: [0.8, 0, 0]
+  },
+  {
+    model: createModel(vec3.fromValues(-10, 0, 10), 1),
+    color: [0.8, 0.8, 0.8]
+  },
+  {
+    model: createModel(vec3.fromValues(-5, 0, -10), 1),
+    color: [0, 0.8, 0.8]
+  }
+];
 const planeDraw = loadShaders("plane", "plane").then(([f, v]) => {
   return regl2({
     frag: f,
@@ -79,3 +86,4 @@ Promise.all([planeDraw, bunnyDraw]).then((p) => {
     });
   });
 });
+//# sourceMappingURL=index.js.map

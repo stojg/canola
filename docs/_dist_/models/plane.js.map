@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["/Users/stojg/Sites/canola/src/models/plane.ts"],
+  "sourcesContent": ["import type REGL from 'regl'\n\nconst planePosition: REGL.Vec3[] = []\nplanePosition.push([-0.5, 0.0, -0.5])\nplanePosition.push([+0.5, 0.0, -0.5])\nplanePosition.push([-0.5, 0.0, +0.5])\nplanePosition.push([+0.5, 0.0, +0.5])\nconst planeNormal: REGL.Vec3[] = []\nplaneNormal.push([0.0, 1.0, 0.0])\nplaneNormal.push([0.0, 1.0, 0.0])\nplaneNormal.push([0.0, 1.0, 0.0])\nplaneNormal.push([0.0, 1.0, 0.0])\n\nconst planeElements: REGL.Vec3[] = []\nplaneElements.push([3, 1, 0])\nplaneElements.push([0, 2, 3])\n\nexport default {\n  positions: planePosition,\n  normals: planeNormal,\n  cells: planeElements,\n}\n"],
+  "mappings": "AAEA,MAAM,gBAA6B;AACnC,cAAc,KAAK,CAAC,MAAM,GAAK;AAC/B,cAAc,KAAK,CAAC,KAAM,GAAK;AAC/B,cAAc,KAAK,CAAC,MAAM,GAAK;AAC/B,cAAc,KAAK,CAAC,KAAM,GAAK;AAC/B,oBAAiC;AACjC,YAAY,KAAK,CAAC,GAAK,GAAK;AAC5B,YAAY,KAAK,CAAC,GAAK,GAAK;AAC5B,YAAY,KAAK,CAAC,GAAK,GAAK;AAC5B,YAAY,KAAK,CAAC,GAAK,GAAK;AAE5B,sBAAmC;AACnC,cAAc,KAAK,CAAC,GAAG,GAAG;AAC1B,cAAc,KAAK,CAAC,GAAG,GAAG;AAE1B,eAAe;AAAA,EACb,WAAW;AAAA,EACX,SAAS;AAAA,EACT,OAAO;AAAA;",
+  "names": []
+}

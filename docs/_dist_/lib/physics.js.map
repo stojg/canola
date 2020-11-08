@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["/Users/stojg/Sites/canola/src/lib/physics.ts"],
+  "sourcesContent": ["import { quat, vec3 } from 'gl-matrix'\n\nexport class Physics {\n  velocity: vec3 = vec3.create()\n  rotation: quat = quat.identity(new Float32Array(4))\n\n  constructor() {}\n}\n"],
+  "mappings": "AAAA;AAAA;AAAA,EAME;AAHA,oBAAiB,KAAK;AACtB,oBAAiB,KAAK,SAAS,IAAI,aAAa;AAAA;AAAA;",
+  "names": []
+}

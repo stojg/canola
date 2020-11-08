@@ -5,3 +5,4 @@ export class Physics {
     this.rotation = quat.identity(new Float32Array(4));
   }
 }
+//# sourceMappingURL=physics.js.map

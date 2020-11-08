@@ -16,3 +16,4 @@ export default {
   normals: planeNormal,
   cells: planeElements
 };
+//# sourceMappingURL=plane.js.map

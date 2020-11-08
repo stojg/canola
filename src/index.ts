@@ -1,35 +1,35 @@
-import REGL from 'regl';
-import { createCamera } from './lib/camera';
+import REGL from 'regl'
+import { createCamera } from './lib/camera'
 
-import bunny from 'bunny';
-import plane from './models/plane';
-import normals from 'angle-normals';
-import { mat4, vec3 } from 'gl-matrix';
-import { FPSControls } from './lib/controls';
+import bunny from 'bunny'
+import plane from './models/plane'
+import normals from 'angle-normals'
+import { mat4, vec3 } from 'gl-matrix'
+import { FPSControls } from './lib/controls'
 
 const regl = REGL({
   attributes: {
     antialias: true,
   },
-});
+})
 
-const controls = new FPSControls(regl._gl.canvas as HTMLCanvasElement);
+const controls = new FPSControls(regl._gl.canvas as HTMLCanvasElement)
 const camera = createCamera(regl, controls, {
   position: vec3.fromValues(0, 10, 50),
-});
+})
 
 const loadShaders = (fname: string, vname: string) => {
-  const f = fetch(`/shaders/${fname}.fsh`).then((r) => r.text());
-  const v = fetch(`/shaders/${vname}.vsh`).then((r) => r.text());
-  return Promise.all([f, v]);
-};
+  const f = fetch(`/shaders/${fname}.fsh`).then((r) => r.text())
+  const v = fetch(`/shaders/${vname}.vsh`).then((r) => r.text())
+  return Promise.all([f, v])
+}
 
 const createModel = (position: vec3, scale: number): REGL.Mat4 => {
-  const m = mat4.identity(new Float32Array(16));
-  mat4.translate(m, m, position);
-  mat4.scale(m, m, [scale, scale, scale]);
-  return m as REGL.Mat4;
-};
+  const m = mat4.identity(new Float32Array(16))
+  mat4.translate(m, m, position)
+  mat4.scale(m, m, [scale, scale, scale])
+  return m as REGL.Mat4
+}
 
 const bunnyProps = [
   {
@@ -48,18 +48,18 @@ const bunnyProps = [
     model: createModel(vec3.fromValues(-5, 0, -10), 1),
     color: [0.0, 0.8, 0.8],
   },
-];
+]
 
 interface MeshUniforms {
-  model: REGL.Mat4;
-  color: REGL.Vec3;
-  'lights[0].color': REGL.Vec3;
-  'lights[0].position': REGL.Vec3;
+  model: REGL.Mat4
+  color: REGL.Vec3
+  'lights[0].color': REGL.Vec3
+  'lights[0].position': REGL.Vec3
 }
 
 interface MeshAttributes {
-  position: REGL.Vec3[];
-  normal: REGL.Vec3[];
+  position: REGL.Vec3[]
+  normal: REGL.Vec3[]
 }
 
 const planeDraw = loadShaders('plane', 'plane').then(([f, v]) => {
@@ -77,8 +77,8 @@ const planeDraw = loadShaders('plane', 'plane').then(([f, v]) => {
       'lights[0].position': [10, 10, 10],
     },
     elements: plane.cells,
-  });
-});
+  })
+})
 
 const bunnyDraw = loadShaders('main', 'main').then(([f, v]) => {
   return regl<MeshUniforms, MeshAttributes>({
@@ -95,15 +95,15 @@ const bunnyDraw = loadShaders('main', 'main').then(([f, v]) => {
       'lights[0].position': [10, 10, 10],
     },
     elements: bunny.cells,
-  });
-});
+  })
+})
 
 Promise.all([planeDraw, bunnyDraw]).then((p) => {
   regl.frame(() => {
-    regl.clear({ color: [0.05, 0.05, 0.05, 1] });
+    regl.clear({ color: [0.05, 0.05, 0.05, 1] })
     camera(() => {
-      p[0]();
-      p[1](bunnyProps);
-    });
-  });
-});
+      p[0]()
+      p[1](bunnyProps)
+    })
+  })
+})

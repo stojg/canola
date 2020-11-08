@@ -53,3 +53,4 @@ export class Transform {
     this.dirty = false;
   }
 }
+//# sourceMappingURL=transform.js.map

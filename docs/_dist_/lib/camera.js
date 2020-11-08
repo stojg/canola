@@ -83,3 +83,4 @@ export function createCamera(regl, controls, props) {
 function lerp(a, b, amount) {
   return a * (1 - amount) + b * amount;
 }
+//# sourceMappingURL=camera.js.map

@@ -14,7 +14,9 @@ module.exports = {
     /* ... */
   },
   buildOptions: {
-    /* ... */
+    out: "docs",
+    clean: true,
+    sourceMaps: true,
   },
   proxy: {
     /* ... */
