@@ -35,44 +35,44 @@ const createModel = (position: vec3, scale: number, deg: number = 0, rotAxis: ve
 }
 
 const lights = [
-  {color: [100,100,100], pos: vec3.fromValues(-3,3,-3)},
-  {color: [100,0,0], pos: vec3.fromValues(3,3,3)},
-  {color: [0,100,0], pos: vec3.fromValues(-3,3,3)},
-  {color: [0,0,100], pos: vec3.fromValues(3,3,-3)}
+  {color: vec3.fromValues(100,100,100), pos: vec3.fromValues(-3,3,-3)},
+  {color: vec3.fromValues(100,0,0), pos: vec3.fromValues(3,3,3)},
+  {color: vec3.fromValues(0,100,0), pos: vec3.fromValues(-3,3,3)},
+  {color: vec3.fromValues(0,0,100), pos: vec3.fromValues(3,3,-3)}
 ]
 
 const bunnyProps = [
   {
     model: createModel(vec3.fromValues(0, 0, 0), 0.2, 45),
-    albedo: [0.55, 0.55, 0.60],
+    albedo: vec3.fromValues(0.55, 0.55, 0.60),
     metallic: 0.25, // 0.0 - 1.0,
     roughness: 1 - 0.18, // 0.025 - 1.0
     ao: 1.0, // 0.0 - 1.0
   },
   {
     model: createModel(vec3.fromValues(4, 0, 4), 0.2, -45),
-    albedo: [0.69, 0.27, 0.20],
+    albedo: vec3.fromValues(0.69, 0.27, 0.20),
     metallic: 0.20, // 0.0 - 1.0,
     roughness: 1 - 0.25, // 0.025 - 1.0
     ao: 1.0, // 0.0 - 1.0
   },
   {
     model: createModel(vec3.fromValues(-4, 0, 4), 0.2, 90),
-    albedo: [0.0, 0.5, 0.0],
+    albedo: vec3.fromValues(0.0, 0.5, 0.0),
     metallic: 0, // 0.0 - 1.0,
     roughness: 0.025, // 0.025 - 1.0
     ao: 1.0, // 0.0 - 1.0
   },
   {
     model: createModel(vec3.fromValues(-2, 0, 4), 0.2, 35),
-    albedo: [0.0, 0.5, 0.9],
+    albedo: vec3.fromValues(0.0, 0.5, 0.9),
     metallic: 0.5, // 0.0 - 1.0,
     roughness: 0.025, // 0.025 - 1.0
     ao: 1.0, // 0.0 - 1.0
   }
 ]
 
-const lightProps = []
+const lightProps : any = []
 for (const i in lights) {
   lightProps.push({
     model: createModel(lights[i].pos, 0.05),
@@ -97,14 +97,20 @@ interface MeshUniforms {
   metallic: number,
   roughness: number,
   ao: number,
-  'lights[0].color': REGL.Vec3
-  'lights[0].position': REGL.Vec3
+  'lights[0].color': vec3
+  'lights[0].position': vec3
+  'lights[1].color': vec3
+  'lights[1].position': vec3
+  'lights[2].color': vec3
+  'lights[2].position': vec3
+  'lights[3].color': vec3
+  'lights[3].position': vec3
 }
 
 interface MeshAttributes {
   position: vec3[]
   normal: vec3[]
-  uv: vec2[]
+  // uv: vec2[]
 }
 
 const planeDraw = loadShaders('pbr', 'pbr').then(([f, v]) => {
@@ -176,7 +182,6 @@ const lightDraw = loadShaders('pbr', 'pbr').then(([f, v]) => {
     },
   })
 })
-
 
 Promise.all([planeDraw, bunnyDraw, lightDraw]).then((p) => {
   regl.frame(() => {
