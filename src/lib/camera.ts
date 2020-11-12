@@ -18,15 +18,17 @@ export function createCamera(regl: REGL.Regl, controls: FPSControls, props: Came
         position: props.position,
         rotation: props.rotation,
       }),
+    // copied on update from the transform
     yawChange: 0,
     pitchChange: 0,
     pointerLocked: false,
-    projection: mat4.identity(new Float32Array(16)),
     up: new Float32Array(props.up || [0, 1, 0]),
+    projection: mat4.identity(new Float32Array(16)),
     view: mat4.identity(new Float32Array(16)),
+    camPos : props.position,
   }
 
-  const uniforms = ['view', 'projection']
+  const uniforms = ['projection', 'view', 'camPos']
 
   function look() {
     const ptrSensitivity = 0.005
@@ -55,7 +57,7 @@ export function createCamera(regl: REGL.Regl, controls: FPSControls, props: Came
       vec3.transformQuat(tmp, [1, 0, 0], cameraState.transform.rotation)
       vec3.add(move, move, tmp)
     }
-    const sensitivity = 0.5
+    const sensitivity = 0.1
     vec3.scale(move, move, sensitivity)
     cameraState.transform.addPosition(move)
   }
@@ -79,6 +81,7 @@ export function createCamera(regl: REGL.Regl, controls: FPSControls, props: Came
   }
 
   function update() {
+    cameraState.camPos = vec3.clone(cameraState.transform.position)
     look()
     move()
     cameraState.transform.update()
@@ -88,6 +91,7 @@ export function createCamera(regl: REGL.Regl, controls: FPSControls, props: Came
   const injectContext = regl({
     context: Object.assign({}, cameraState, {
       projection: (ctx: REGL.DefaultContext) => mat4.perspective(cameraState.projection, glMatrix.toRadian(80), ctx.viewportWidth / ctx.viewportHeight, 0.01, 1000.0),
+      // cameraPosition: (ctx: REGL.DefaultContext) => cameraState.cameraPosition
     }),
     uniforms: Object.keys(cameraState).reduce((res: {}, name: string) => {
       if (uniforms.includes(name)) {

@@ -4,7 +4,8 @@ struct Light {
     vec3 position;
 };
 uniform Light lights[1];
-uniform vec3 color;
+uniform vec3 albedo;
+uniform vec3 camPos;
 
 varying vec3 fragNormal, fragPosition;
 void main() {
@@ -15,5 +16,5 @@ void main() {
         float diffuse = max(0.0, dot(lightDir, normal));
         light += diffuse * lights[i].color;
     }
-    gl_FragColor = vec4(color * 0.5 + light * 0.5, 1);
+    gl_FragColor = vec4(albedo * 0.5 + light * 0.5, 1);
 }
