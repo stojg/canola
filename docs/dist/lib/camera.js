@@ -9,11 +9,12 @@ export function createCamera(regl, controls, props) {
     yawChange: 0,
     pitchChange: 0,
     pointerLocked: false,
-    projection: mat4.identity(new Float32Array(16)),
     up: new Float32Array(props.up || [0, 1, 0]),
-    view: mat4.identity(new Float32Array(16))
+    projection: mat4.identity(new Float32Array(16)),
+    view: mat4.identity(new Float32Array(16)),
+    camPos: props.position
   };
-  const uniforms = ["view", "projection"];
+  const uniforms = ["projection", "view", "camPos"];
   function look() {
     const ptrSensitivity = 5e-3;
     const ptr = controls.pointerMovement();
@@ -40,7 +41,7 @@ export function createCamera(regl, controls, props) {
       vec3.transformQuat(tmp, [1, 0, 0], cameraState.transform.rotation);
       vec3.add(move2, move2, tmp);
     }
-    const sensitivity = 0.5;
+    const sensitivity = 0.1;
     vec3.scale(move2, move2, sensitivity);
     cameraState.transform.addPosition(move2);
   }
@@ -58,6 +59,7 @@ export function createCamera(regl, controls, props) {
     mat4.multiply(cameraState.view, cameraRotation, cameraTranslation);
   }
   function update() {
+    cameraState.camPos = vec3.clone(cameraState.transform.position);
     look();
     move();
     cameraState.transform.update();
