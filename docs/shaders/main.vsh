@@ -6,7 +6,6 @@ uniform mat4 projection;
 uniform mat4 view;
 uniform mat4 model;
 
-varying vec2 TexCoords;
 varying vec3 WorldPos;
 varying vec3 Normal;
 
