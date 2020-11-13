@@ -9,6 +9,8 @@ import {FPSControls} from "./lib/controls.js";
 import {cube as cube2} from "./models/cube.js";
 import createStatsWidget from "../web/regl-stats-widget.js";
 import {Model} from "./lib/model.js";
+const xyz = (t) => vec3.fromValues(t[0], t[1], t[2]);
+const CUBE_MAP_SIZE = 512;
 const loading = {
   manifest: {
     "main.fsh": {
@@ -98,11 +100,11 @@ const main = (assets) => {
       ao: 0
     }, [0, 0, 0], 20, 90, [1, 0, 0])
   ];
-  const xyz = (t) => vec3.fromValues(t[0], t[1], t[2]);
-  const CUBE_MAP_SIZE = 512;
   const shadowFbo = regl2.framebufferCube({
     radius: CUBE_MAP_SIZE,
-    colorType: "float"
+    colorFormat: "rgba",
+    colorType: "float",
+    stencil: false
   });
   const drawDepth = regl2({
     viewport: {x: 0, y: 0, width: CUBE_MAP_SIZE, height: CUBE_MAP_SIZE},
