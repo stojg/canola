@@ -39,7 +39,7 @@ export class Model {
     return this.material.roughness
   }
 
-  static uniforms(regl : REGL.Regl) {
+  static uniforms(regl: REGL.Regl) {
     return {
       model: regl.prop<ModelUniforms, 'model'>('model'),
       albedo: regl.prop<ModelUniforms, 'albedo'>('albedo'),
@@ -56,5 +56,4 @@ export class Model {
     mat4.scale(translation, translation, [scale, scale, scale])
     return translation
   }
-
 }
