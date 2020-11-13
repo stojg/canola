@@ -188,16 +188,18 @@ const main = (assets) => {
     [bunnyDraw, "bunnies"],
     [lightDraw, "lights"]
   ]);
-  regl2.frame(() => {
+  regl2.frame(({tick}) => {
     const deltaTime = 0.017;
     statsWidget.update(deltaTime);
-    lightScope(() => {
-      drawDepth(6, () => {
-        regl2.clear({depth: 1});
-        bunnyDraw(bunnyProps);
-        planeDraw(planeProps);
+    if (tick % 2 == 0) {
+      lightScope(() => {
+        drawDepth(6, () => {
+          regl2.clear({depth: 1});
+          bunnyDraw(bunnyProps);
+          planeDraw(planeProps);
+        });
       });
-    });
+    }
     regl2.clear({color: [0.05, 0.05, 0.05, 1]});
     camera2(() => {
       lightScope(() => {
