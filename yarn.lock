@@ -1233,6 +1233,11 @@ readdirp@~3.5.0:
   dependencies:
     picomatch "^2.2.1"
 
+regl-stats-widget@0.0.1:
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/regl-stats-widget/-/regl-stats-widget-0.0.1.tgz#acce28c08e89bd18a21abd21ddaf0997d98b4205"
+  integrity sha1-rM4owI6JvRiiGr0h3a8Jl9mLQgU=
+
 regl@^2.0.1:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/regl/-/regl-2.0.1.tgz#925038c050de08764377fe1d2d5f9e65e0b45a52"
@@ -1242,6 +1247,11 @@ requires-port@^1.0.0:
   version "1.0.0"
   resolved "https://registry.yarnpkg.com/requires-port/-/requires-port-1.0.0.tgz#925d2601d39ac485e091cf0da5c6e694dc3dcaff"
   integrity sha1-kl0mAdOaxIXgkc8NpcbmlNw9yv8=
+
+resl@^1.0.3:
+  version "1.0.3"
+  resolved "https://registry.yarnpkg.com/resl/-/resl-1.0.3.tgz#2c7ca5682285bc519f7dcfb81fe6f3df0005e774"
+  integrity sha1-LHylaCKFvFGffc+4H+bz3wAF53Q=
 
 resolve-from@^4.0.0:
   version "4.0.0"

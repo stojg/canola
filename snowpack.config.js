@@ -9,17 +9,17 @@ module.exports = {
   ],
   installOptions: {
     installTypes: true,
-    dest: "web",
+    dest: 'web',
   },
   devOptions: {
     /* ... */
   },
   buildOptions: {
-    out: "docs",
+    out: 'docs',
     clean: true,
     sourceMaps: true,
-    baseUrl: "https://stojg.github.io/canola/",
-    webModulesUrl: "web",
+    baseUrl: 'https://stojg.github.io/canola/',
+    webModulesUrl: 'web',
   },
   proxy: {
     /* ... */
@@ -27,4 +27,4 @@ module.exports = {
   alias: {
     /* ... */
   },
-};
+}

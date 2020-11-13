@@ -25,7 +25,7 @@ export function createCamera(regl: REGL.Regl, controls: FPSControls, props: Came
     up: new Float32Array(props.up || [0, 1, 0]),
     projection: mat4.identity(new Float32Array(16)),
     view: mat4.identity(new Float32Array(16)),
-    camPos : props.position,
+    camPos: props.position,
   }
 
   const uniforms = ['projection', 'view', 'camPos']

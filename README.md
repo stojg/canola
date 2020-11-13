@@ -1,6 +1,6 @@
 # Canola
 
-3D javascript game engine / personal sandbox 
+3D javascript game engine / personal sandbox
 
 ## Available Scripts
 

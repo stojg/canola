@@ -19,7 +19,6 @@ uniform Light lights[4];
 uniform vec3 camPos;
 
 // from vertexshader
-varying vec2 TexCoords;
 varying vec3 WorldPos;
 varying vec3 Normal;
 
