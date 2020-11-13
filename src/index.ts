@@ -12,6 +12,10 @@ import { Model, ModelUniforms } from './lib/model'
 
 interface Assets extends Record<string, string> {}
 
+const xyz = (t: vec4) => vec3.fromValues(t[0], t[1], t[2])
+
+const CUBE_MAP_SIZE = 512
+
 const loading = {
   manifest: {
     // Each entry in the manifest represents an asset to be loaded
@@ -142,13 +146,13 @@ const main = (assets: Assets) => {
     ),
   ]
 
-  const xyz = (t: vec4) => vec3.fromValues(t[0], t[1], t[2])
-
-  const CUBE_MAP_SIZE = 512
   const shadowFbo = regl.framebufferCube({
     radius: CUBE_MAP_SIZE,
+    colorFormat: 'rgba',
     colorType: 'float',
+    stencil: false,
   })
+
   // render point-light shadows into a cubemap
   const drawDepth = regl({
     viewport: { x: 0, y: 0, width: CUBE_MAP_SIZE, height: CUBE_MAP_SIZE },
@@ -195,7 +199,6 @@ const main = (assets: Assets) => {
     vPosition = p.xyz;
     gl_Position = projection * view * p;
   }`,
-
     framebuffer: function (context, props, batchId) {
       return shadowFbo.faces[batchId]
     },

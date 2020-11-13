@@ -72,7 +72,7 @@ void main()
     vec3 texCoord = (WorldPos - lights[0].position.xyz);
     float visibility = 0.0;
     // do soft shadows:
-    const float bias = 0.2;
+    const float bias = 0.3;
     for (int x = 0; x < 2; x++) {
         for (int y = 0; y < 2; y++) {
             for (int z = 0; z < 2; z++) {
@@ -85,11 +85,12 @@ void main()
 
     vec3 ambient = vec3(0.03) * albedo * ao;
     vec3 color = ambient + Lo;
+    color *= visibility;
 
     color = color / (color + vec3(1.0));
     color = pow(color, vec3(1.0/2.2));
 
-    gl_FragColor = vec4(color * visibility, 1.0);
+    gl_FragColor = vec4(color, 1.0);
 }
 
 vec3 fresnelSchlick(float cosTheta, vec3 F0)
