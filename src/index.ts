@@ -243,17 +243,19 @@ const main = (assets: Assets) => {
     [lightDraw, 'lights'],
   ])
 
-  regl.frame(() => {
+  regl.frame(({tick}) => {
     const deltaTime = 0.017
     statsWidget.update(deltaTime)
 
-    lightScope(() => {
-      drawDepth(6, () => {
-        regl.clear({ depth: 1 })
-        bunnyDraw(bunnyProps)
-        planeDraw(planeProps)
+    if (tick % 2 == 0) {
+      lightScope(() => {
+        drawDepth(6, () => {
+          regl.clear({ depth: 1 })
+          bunnyDraw(bunnyProps)
+          planeDraw(planeProps)
+        })
       })
-    })
+    }
 
     regl.clear({ color: [0.05, 0.05, 0.05, 1] })
     camera(() => {
