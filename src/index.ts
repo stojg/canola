@@ -4,7 +4,7 @@ import { createCamera } from './lib/camera'
 import bunny from 'bunny'
 import plane from './models/plane'
 import normals from 'angle-normals'
-import { mat4, vec3, vec4 } from 'gl-matrix'
+import { glMatrix, mat4, vec3, vec4 } from 'gl-matrix'
 import { FPSControls } from './lib/controls'
 import { cube } from './models/cube'
 import createStatsWidget from 'regl-stats-widget'
@@ -58,7 +58,7 @@ const main = (assets: Assets) => {
   })
 
   const controls = new FPSControls(regl._gl.canvas as HTMLCanvasElement)
-  const camera = createCamera(regl, controls, { position: [0, 1.5, 10] })
+  const camera = createCamera(regl, controls, { position: [0, 3, 10] })
 
   interface LightUniforms {
     'lights[0].on': boolean
@@ -76,7 +76,7 @@ const main = (assets: Assets) => {
   }
 
   const lights = [
-    { on: true, color: vec3.fromValues(100, 100, 100), pos: vec4.fromValues(0, 5, 0, 1) },
+    { on: true, color: vec3.fromValues(100, 100, 100), pos: vec4.fromValues(0, 3, 0, 1) },
     // { on: true, color: vec3.fromValues(100, 100, 100), pos: vec4.fromValues(-3, 3, -3, 1) },
     { on: false, color: vec3.fromValues(100, 0, 0), pos: vec4.fromValues(3, 3, 3, 1) },
     { on: false, color: vec3.fromValues(0, 100, 0), pos: vec4.fromValues(-3, 3, 3, 1) },
@@ -144,16 +144,16 @@ const main = (assets: Assets) => {
 
   const xyz = (t: vec4) => vec3.fromValues(t[0], t[1], t[2])
 
-  const CUBE_MAP_SIZE = 1024
+  const CUBE_MAP_SIZE = 512
   const shadowFbo = regl.framebufferCube({
     radius: CUBE_MAP_SIZE,
-    colorFormat: 'rgba',
     colorType: 'float',
   })
   // render point-light shadows into a cubemap
   const drawDepth = regl({
+    viewport: { x: 0, y: 0, width: CUBE_MAP_SIZE, height: CUBE_MAP_SIZE },
     uniforms: {
-      projection: mat4.perspective(mat4.create(), Math.PI / 2.0, 1.0, 0.05, 100.0),
+      projection: mat4.perspective(mat4.create(), glMatrix.toRadian(90), 1, 0.25, 30.0),
       view: function (context, props, batchId) {
         switch (batchId) {
           case 0: // +x right
@@ -180,12 +180,10 @@ const main = (assets: Assets) => {
       bool on;
   };
   uniform Light lights[4];
-  precision mediump float;
   varying vec3 vPosition;
   void main () {
     gl_FragColor = vec4(vec3(distance(vPosition, lights[0].position.xyz)), 1.0);
   }`,
-
     vert: `
   precision mediump float;
   attribute vec3 position;
@@ -221,12 +219,6 @@ const main = (assets: Assets) => {
     uniforms: Model.uniforms(regl),
   })
 
-  const normalDraw = regl({
-    frag: assets['pbr.fsh'],
-    vert: assets['main.vsh'],
-    cull: { enable: true, face: 'back' },
-  })
-
   const shadowDraw = regl({
     frag: assets['pbr_shadow.fsh'],
     vert: assets['main.vsh'],
@@ -249,17 +241,18 @@ const main = (assets: Assets) => {
   ])
 
   regl.frame(() => {
-    regl.clear({ color: [0.05, 0.05, 0.05, 1] })
     const deltaTime = 0.017
     statsWidget.update(deltaTime)
 
     lightScope(() => {
       drawDepth(6, () => {
+        regl.clear({ depth: 1 })
         bunnyDraw(bunnyProps)
         planeDraw(planeProps)
       })
     })
 
+    regl.clear({ color: [0.05, 0.05, 0.05, 1] })
     camera(() => {
       lightScope(() => {
         shadowDraw(() => {
