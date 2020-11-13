@@ -4,7 +4,7 @@ import { createCamera } from './lib/camera'
 import bunny from 'bunny'
 import plane from './models/plane'
 import normals from 'angle-normals'
-import { vec3, vec4 } from 'gl-matrix'
+import { mat4, vec3, vec4 } from 'gl-matrix'
 import { FPSControls } from './lib/controls'
 import { cube } from './models/cube'
 import createStatsWidget from 'regl-stats-widget'
@@ -27,6 +27,10 @@ const loading = {
       type: 'text', // the type declares the type of the asset
       src: 'shaders/pbr.fsh', // and src declares the URL of the asset
     },
+    'pbr_shadow.fsh': {
+      type: 'text', // the type declares the type of the asset
+      src: 'shaders/pbr_shadow.fsh', // and src declares the URL of the asset
+    },
   },
   onProgress: (progress: any, message: any) => {
     console.log(progress, message)
@@ -48,7 +52,7 @@ resl(loading)
 
 const main = (assets: Assets) => {
   const regl = REGL({
-    extensions: 'ext_disjoint_timer_query',
+    extensions: ['oes_texture_float', 'ext_disjoint_timer_query'],
     profile: true,
     attributes: { antialias: true },
   })
@@ -72,20 +76,28 @@ const main = (assets: Assets) => {
   }
 
   const lights = [
-    { on: true, color: vec3.fromValues(100, 100, 100), pos: vec4.fromValues(-3, 3, -3, 1) },
-    { on: true, color: vec3.fromValues(100, 0, 0), pos: vec4.fromValues(3, 3, 3, 1) },
-    { on: true, color: vec3.fromValues(0, 100, 0), pos: vec4.fromValues(-3, 3, 3, 1) },
-    { on: true, color: vec3.fromValues(0, 0, 100), pos: vec4.fromValues(3, 3, -3, 1) },
+    { on: true, color: vec3.fromValues(100, 100, 100), pos: vec4.fromValues(0, 5, 0, 1) },
+    // { on: true, color: vec3.fromValues(100, 100, 100), pos: vec4.fromValues(-3, 3, -3, 1) },
+    { on: false, color: vec3.fromValues(100, 0, 0), pos: vec4.fromValues(3, 3, 3, 1) },
+    { on: false, color: vec3.fromValues(0, 100, 0), pos: vec4.fromValues(-3, 3, 3, 1) },
+    { on: false, color: vec3.fromValues(0, 0, 100), pos: vec4.fromValues(3, 3, -3, 1) },
   ]
   const lightProps: any = []
   for (const i in lights) {
     if (!lights[i].on) continue
-    lightProps.push(new Model({ albedo: lights[i].color, metallic: 0, roughness: 0.025, ao: 1.0 }, [lights[i].pos[0], lights[i].pos[1], lights[i].pos[2]], 0.05))
+    lightProps.push(
+      new Model(
+        {
+          albedo: lights[i].color,
+          metallic: 0,
+          roughness: 0.025,
+          ao: 1.0,
+        },
+        [lights[i].pos[0], lights[i].pos[1], lights[i].pos[2]],
+        0.05,
+      ),
+    )
   }
-
-  const mainScope = regl({
-    cull: { enable: true, face: 'back' },
-  })
 
   const lightScope = regl<LightUniforms>({
     uniforms: {
@@ -130,29 +142,104 @@ const main = (assets: Assets) => {
     ),
   ]
 
+  const xyz = (t: vec4) => vec3.fromValues(t[0], t[1], t[2])
+
+  const CUBE_MAP_SIZE = 1024
+  const shadowFbo = regl.framebufferCube({
+    radius: CUBE_MAP_SIZE,
+    colorFormat: 'rgba',
+    colorType: 'float',
+  })
+  // render point-light shadows into a cubemap
+  const drawDepth = regl({
+    uniforms: {
+      projection: mat4.perspective(mat4.create(), Math.PI / 2.0, 1.0, 0.05, 100.0),
+      view: function (context, props, batchId) {
+        switch (batchId) {
+          case 0: // +x right
+            return mat4.lookAt(mat4.create(), xyz(lights[0].pos), vec3.add(vec3.create(), vec3.fromValues(1, 0, 0), xyz(lights[0].pos)), [0, -1, 0])
+          case 1: // -x left
+            return mat4.lookAt(mat4.create(), xyz(lights[0].pos), vec3.add(vec3.create(), vec3.fromValues(-1, 0, 0), xyz(lights[0].pos)), [0, -1, 0])
+          case 2: // +y top
+            return mat4.lookAt(mat4.create(), xyz(lights[0].pos), vec3.add(vec3.create(), vec3.fromValues(0, 1, 0), xyz(lights[0].pos)), [0, 0, 1])
+          case 3: // -y bottom
+            return mat4.lookAt(mat4.create(), xyz(lights[0].pos), vec3.add(vec3.create(), vec3.fromValues(0, -1, 0), xyz(lights[0].pos)), [0, 0, -1])
+          case 4: // +z near
+            return mat4.lookAt(mat4.create(), xyz(lights[0].pos), vec3.add(vec3.create(), vec3.fromValues(0, 0, 1), xyz(lights[0].pos)), [0, -1, 0])
+          case 5: // -z far
+            return mat4.lookAt(mat4.create(), xyz(lights[0].pos), vec3.add(vec3.create(), vec3.fromValues(0, 0, -1), xyz(lights[0].pos)), [0, -1, 0])
+        }
+      },
+    },
+    frag: `
+  precision mediump float;
+  // lights
+  struct Light {
+      vec3 color;
+      vec4 position;
+      bool on;
+  };
+  uniform Light lights[4];
+  precision mediump float;
+  varying vec3 vPosition;
+  void main () {
+    gl_FragColor = vec4(vec3(distance(vPosition, lights[0].position.xyz)), 1.0);
+  }`,
+
+    vert: `
+  precision mediump float;
+  attribute vec3 position;
+
+  varying vec3 vPosition;
+  uniform mat4 projection, view, model;
+  void main() {
+    vec4 p = model * vec4(position, 1.0);
+    vPosition = p.xyz;
+    gl_Position = projection * view * p;
+  }`,
+
+    framebuffer: function (context, props, batchId) {
+      return shadowFbo.faces[batchId]
+    },
+  })
+
   const planeDraw = regl<ModelUniforms, MeshAttributes>({
-    frag: assets['pbr.fsh'],
-    vert: assets['main.vsh'],
     elements: plane.indices,
-    cull: { enable: true, face: 'back' },
     attributes: { position: plane.positions, normal: plane.normals },
     uniforms: Model.uniforms(regl),
   })
 
   const bunnyDraw = regl<ModelUniforms, MeshAttributes>({
-    frag: assets['pbr.fsh'],
-    vert: assets['main.vsh'],
     elements: bunny.cells,
     attributes: { position: bunny.positions, normal: normals(bunny.cells, bunny.positions) },
     uniforms: Model.uniforms(regl),
   })
 
   const lightDraw = regl<ModelUniforms, MeshAttributes>({
-    frag: assets['main.fsh'],
-    vert: assets['main.vsh'],
     elements: cube.indices,
     attributes: { position: cube.positions, normal: cube.normals },
     uniforms: Model.uniforms(regl),
+  })
+
+  const normalDraw = regl({
+    frag: assets['pbr.fsh'],
+    vert: assets['main.vsh'],
+    cull: { enable: true, face: 'back' },
+  })
+
+  const shadowDraw = regl({
+    frag: assets['pbr_shadow.fsh'],
+    vert: assets['main.vsh'],
+    cull: { enable: true, face: 'back' },
+    uniforms: {
+      shadowCube: shadowFbo,
+    },
+  })
+
+  const plainDraw = regl({
+    frag: assets['main.fsh'],
+    vert: assets['main.vsh'],
+    cull: { enable: true, face: 'back' },
   })
 
   const statsWidget = createStatsWidget([
@@ -166,96 +253,24 @@ const main = (assets: Assets) => {
     const deltaTime = 0.017
     statsWidget.update(deltaTime)
 
-    mainScope(() => {
-      camera(() => {
-        lightScope(() => {
+    lightScope(() => {
+      drawDepth(6, () => {
+        bunnyDraw(bunnyProps)
+        planeDraw(planeProps)
+      })
+    })
+
+    camera(() => {
+      lightScope(() => {
+        shadowDraw(() => {
           bunnyDraw(bunnyProps)
           planeDraw(planeProps)
         })
+      })
+
+      plainDraw(() => {
         lightDraw(lightProps)
       })
     })
   })
-}
-
-// https://github.com/regl-project/regl/blob/gh-pages/example/shadow-volume.js
-// ----First pass: Normally draw mesh, no stencil buffer
-const pass1 = {
-  // use depth-buffer as usual.
-  depth: { enable: true, mask: true, func: '<=' },
-  // no stencil test
-  stencil: { enable: false },
-  // turn on color write
-  colorMask: [true, true, true, true],
-  // cull back-faces as usual.
-  cull: { enable: true, face: 'back' },
-}
-
-// ---Second pass: Draw to stencil buffer
-const pass2 = {
-  depth: {
-    mask: false, // don't write to depth buffer
-    enable: true, // but DO use the depth test!
-    func: '<',
-  },
-
-  // setup stencil buffer.
-  stencil: {
-    enable: true,
-    mask: 0xff,
-    func: {
-      // stencil test always passes.
-      // since we are only writing to the stencil buffer in this pass.
-      cmp: 'always',
-      ref: 0,
-      mask: 0xff,
-    },
-    // as can be seen, basically we are doing Carmack's reverse.
-    opBack: { fail: 'keep', zfail: 'increment wrap', zpass: 'keep' },
-    opFront: { fail: 'keep', zfail: 'decrement wrap', zpass: 'keep' },
-  },
-  // do no culling. This means that we can write to the stencil
-  // buffer in a single pass! So we handle both the backfaces and the frontfaces
-  // in this pass.
-  cull: { enable: false },
-
-  // don't write to color buffer.
-  colorMask: [false, false, false, false],
-}
-
-// ----Final pass: Draw mesh and overwrite the shadowed parts
-const pass3 = {
-  depth: {
-    mask: false,
-    enable: true,
-    func: '<=',
-  },
-
-  // setup stencil buffer.
-  stencil: {
-    enable: true,
-    mask: 0xff,
-    // IF the stencil value at the fragment is not zero,
-    // then by Carmack's reverse, the fragment is in shadow!
-    func: {
-      cmp: '!=',
-      ref: 0,
-      mask: 0xff,
-    },
-    // do no writing to stencil buffer in this pass.
-    // we already did that in the previous pass.
-    op: {
-      fail: 'keep',
-      zfail: 'keep',
-      pass: 'keep',
-    },
-  },
-
-  // DO write to color buffer.
-  colorMask: [true, true, true, true],
-
-  cull: {
-    enable: true,
-    face: 'back',
-  },
 }
