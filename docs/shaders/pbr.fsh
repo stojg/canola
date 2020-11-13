@@ -11,7 +11,8 @@ uniform float ao;
 // lights
 struct Light {
     vec3 color;
-    vec3 position;
+    vec4 position;
+    bool on;
 };
 uniform Light lights[4];
 
@@ -19,7 +20,6 @@ uniform Light lights[4];
 uniform vec3 camPos;
 
 // from vertexshader
-varying vec2 TexCoords;
 varying vec3 WorldPos;
 varying vec3 Normal;
 
@@ -40,10 +40,13 @@ void main()
     vec3 Lo = vec3(0.0);
     for(int i = 0; i < 4; ++i)
     {
+        if (!lights[i].on) {
+            continue;
+        }
         // calculate per-light radiance
-        vec3 L = normalize(lights[i].position - WorldPos);
+        vec3 L = normalize(lights[i].position.xyz - WorldPos);
         vec3 H = normalize(V + L);
-        float distance    = length(lights[i].position - WorldPos);
+        float distance    = length(lights[i].position.xyz - WorldPos);
         float attenuation = 1.0 / (distance * distance);
         vec3 radiance     = lights[i].color * attenuation;
 

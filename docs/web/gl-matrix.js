@@ -2898,6 +2898,131 @@ function add$2(out, a, b) {
   return out;
 }
 /**
+ * Subtracts vector b from vector a
+ *
+ * @param {vec4} out the receiving vector
+ * @param {ReadonlyVec4} a the first operand
+ * @param {ReadonlyVec4} b the second operand
+ * @returns {vec4} out
+ */
+
+function subtract$2(out, a, b) {
+  out[0] = a[0] - b[0];
+  out[1] = a[1] - b[1];
+  out[2] = a[2] - b[2];
+  out[3] = a[3] - b[3];
+  return out;
+}
+/**
+ * Multiplies two vec4's
+ *
+ * @param {vec4} out the receiving vector
+ * @param {ReadonlyVec4} a the first operand
+ * @param {ReadonlyVec4} b the second operand
+ * @returns {vec4} out
+ */
+
+function multiply$2(out, a, b) {
+  out[0] = a[0] * b[0];
+  out[1] = a[1] * b[1];
+  out[2] = a[2] * b[2];
+  out[3] = a[3] * b[3];
+  return out;
+}
+/**
+ * Divides two vec4's
+ *
+ * @param {vec4} out the receiving vector
+ * @param {ReadonlyVec4} a the first operand
+ * @param {ReadonlyVec4} b the second operand
+ * @returns {vec4} out
+ */
+
+function divide$1(out, a, b) {
+  out[0] = a[0] / b[0];
+  out[1] = a[1] / b[1];
+  out[2] = a[2] / b[2];
+  out[3] = a[3] / b[3];
+  return out;
+}
+/**
+ * Math.ceil the components of a vec4
+ *
+ * @param {vec4} out the receiving vector
+ * @param {ReadonlyVec4} a vector to ceil
+ * @returns {vec4} out
+ */
+
+function ceil$1(out, a) {
+  out[0] = Math.ceil(a[0]);
+  out[1] = Math.ceil(a[1]);
+  out[2] = Math.ceil(a[2]);
+  out[3] = Math.ceil(a[3]);
+  return out;
+}
+/**
+ * Math.floor the components of a vec4
+ *
+ * @param {vec4} out the receiving vector
+ * @param {ReadonlyVec4} a vector to floor
+ * @returns {vec4} out
+ */
+
+function floor$1(out, a) {
+  out[0] = Math.floor(a[0]);
+  out[1] = Math.floor(a[1]);
+  out[2] = Math.floor(a[2]);
+  out[3] = Math.floor(a[3]);
+  return out;
+}
+/**
+ * Returns the minimum of two vec4's
+ *
+ * @param {vec4} out the receiving vector
+ * @param {ReadonlyVec4} a the first operand
+ * @param {ReadonlyVec4} b the second operand
+ * @returns {vec4} out
+ */
+
+function min$1(out, a, b) {
+  out[0] = Math.min(a[0], b[0]);
+  out[1] = Math.min(a[1], b[1]);
+  out[2] = Math.min(a[2], b[2]);
+  out[3] = Math.min(a[3], b[3]);
+  return out;
+}
+/**
+ * Returns the maximum of two vec4's
+ *
+ * @param {vec4} out the receiving vector
+ * @param {ReadonlyVec4} a the first operand
+ * @param {ReadonlyVec4} b the second operand
+ * @returns {vec4} out
+ */
+
+function max$1(out, a, b) {
+  out[0] = Math.max(a[0], b[0]);
+  out[1] = Math.max(a[1], b[1]);
+  out[2] = Math.max(a[2], b[2]);
+  out[3] = Math.max(a[3], b[3]);
+  return out;
+}
+/**
+ * Math.round the components of a vec4
+ *
+ * @param {vec4} out the receiving vector
+ * @param {ReadonlyVec4} a vector to round
+ * @returns {vec4} out
+ */
+
+function round$1(out, a) {
+  out[0] = Math.round(a[0]);
+  out[1] = Math.round(a[1]);
+  out[2] = Math.round(a[2]);
+  out[3] = Math.round(a[3]);
+  return out;
+}
+/**
  * Scales a vec4 by a scalar number
  *
  * @param {vec4} out the receiving vector
@@ -2912,6 +3037,53 @@ function scale$2(out, a, b) {
   out[2] = a[2] * b;
   out[3] = a[3] * b;
   return out;
+}
+/**
+ * Adds two vec4's after scaling the second operand by a scalar value
+ *
+ * @param {vec4} out the receiving vector
+ * @param {ReadonlyVec4} a the first operand
+ * @param {ReadonlyVec4} b the second operand
+ * @param {Number} scale the amount to scale b by before adding
+ * @returns {vec4} out
+ */
+
+function scaleAndAdd$1(out, a, b, scale) {
+  out[0] = a[0] + b[0] * scale;
+  out[1] = a[1] + b[1] * scale;
+  out[2] = a[2] + b[2] * scale;
+  out[3] = a[3] + b[3] * scale;
+  return out;
+}
+/**
+ * Calculates the euclidian distance between two vec4's
+ *
+ * @param {ReadonlyVec4} a the first operand
+ * @param {ReadonlyVec4} b the second operand
+ * @returns {Number} distance between a and b
+ */
+
+function distance$1(a, b) {
+  var x = b[0] - a[0];
+  var y = b[1] - a[1];
+  var z = b[2] - a[2];
+  var w = b[3] - a[3];
+  return Math.hypot(x, y, z, w);
+}
+/**
+ * Calculates the squared euclidian distance between two vec4's
+ *
+ * @param {ReadonlyVec4} a the first operand
+ * @param {ReadonlyVec4} b the second operand
+ * @returns {Number} squared distance between a and b
+ */
+
+function squaredDistance$1(a, b) {
+  var x = b[0] - a[0];
+  var y = b[1] - a[1];
+  var z = b[2] - a[2];
+  var w = b[3] - a[3];
+  return x * x + y * y + z * z + w * w;
 }
 /**
  * Calculates the length of a vec4
@@ -2940,6 +3112,36 @@ function squaredLength$1(a) {
   var z = a[2];
   var w = a[3];
   return x * x + y * y + z * z + w * w;
+}
+/**
+ * Negates the components of a vec4
+ *
+ * @param {vec4} out the receiving vector
+ * @param {ReadonlyVec4} a vector to negate
+ * @returns {vec4} out
+ */
+
+function negate$1(out, a) {
+  out[0] = -a[0];
+  out[1] = -a[1];
+  out[2] = -a[2];
+  out[3] = -a[3];
+  return out;
+}
+/**
+ * Returns the inverse of the components of a vec4
+ *
+ * @param {vec4} out the receiving vector
+ * @param {ReadonlyVec4} a vector to invert
+ * @returns {vec4} out
+ */
+
+function inverse$1(out, a) {
+  out[0] = 1.0 / a[0];
+  out[1] = 1.0 / a[1];
+  out[2] = 1.0 / a[2];
+  out[3] = 1.0 / a[3];
+  return out;
 }
 /**
  * Normalize a vec4
@@ -2978,6 +3180,33 @@ function dot$1(a, b) {
   return a[0] * b[0] + a[1] * b[1] + a[2] * b[2] + a[3] * b[3];
 }
 /**
+ * Returns the cross-product of three vectors in a 4-dimensional space
+ *
+ * @param {ReadonlyVec4} result the receiving vector
+ * @param {ReadonlyVec4} U the first vector
+ * @param {ReadonlyVec4} V the second vector
+ * @param {ReadonlyVec4} W the third vector
+ * @returns {vec4} result
+ */
+
+function cross$1(out, u, v, w) {
+  var A = v[0] * w[1] - v[1] * w[0],
+      B = v[0] * w[2] - v[2] * w[0],
+      C = v[0] * w[3] - v[3] * w[0],
+      D = v[1] * w[2] - v[2] * w[1],
+      E = v[1] * w[3] - v[3] * w[1],
+      F = v[2] * w[3] - v[3] * w[2];
+  var G = u[0];
+  var H = u[1];
+  var I = u[2];
+  var J = u[3];
+  out[0] = H * F - I * E + J * D;
+  out[1] = -(G * F) + I * C - J * B;
+  out[2] = G * E - H * C + J * A;
+  out[3] = -(G * D) + H * B - I * A;
+  return out;
+}
+/**
  * Performs a linear interpolation between two vec4's
  *
  * @param {vec4} out the receiving vector
@@ -2997,6 +3226,114 @@ function lerp$1(out, a, b, t) {
   out[2] = az + t * (b[2] - az);
   out[3] = aw + t * (b[3] - aw);
   return out;
+}
+/**
+ * Generates a random vector with the given scale
+ *
+ * @param {vec4} out the receiving vector
+ * @param {Number} [scale] Length of the resulting vector. If ommitted, a unit vector will be returned
+ * @returns {vec4} out
+ */
+
+function random$1(out, scale) {
+  scale = scale || 1.0; // Marsaglia, George. Choosing a Point from the Surface of a
+  // Sphere. Ann. Math. Statist. 43 (1972), no. 2, 645--646.
+  // http://projecteuclid.org/euclid.aoms/1177692644;
+
+  var v1, v2, v3, v4;
+  var s1, s2;
+
+  do {
+    v1 = RANDOM() * 2 - 1;
+    v2 = RANDOM() * 2 - 1;
+    s1 = v1 * v1 + v2 * v2;
+  } while (s1 >= 1);
+
+  do {
+    v3 = RANDOM() * 2 - 1;
+    v4 = RANDOM() * 2 - 1;
+    s2 = v3 * v3 + v4 * v4;
+  } while (s2 >= 1);
+
+  var d = Math.sqrt((1 - s1) / s2);
+  out[0] = scale * v1;
+  out[1] = scale * v2;
+  out[2] = scale * v3 * d;
+  out[3] = scale * v4 * d;
+  return out;
+}
+/**
+ * Transforms the vec4 with a mat4.
+ *
+ * @param {vec4} out the receiving vector
+ * @param {ReadonlyVec4} a the vector to transform
+ * @param {ReadonlyMat4} m matrix to transform with
+ * @returns {vec4} out
+ */
+
+function transformMat4$1(out, a, m) {
+  var x = a[0],
+      y = a[1],
+      z = a[2],
+      w = a[3];
+  out[0] = m[0] * x + m[4] * y + m[8] * z + m[12] * w;
+  out[1] = m[1] * x + m[5] * y + m[9] * z + m[13] * w;
+  out[2] = m[2] * x + m[6] * y + m[10] * z + m[14] * w;
+  out[3] = m[3] * x + m[7] * y + m[11] * z + m[15] * w;
+  return out;
+}
+/**
+ * Transforms the vec4 with a quat
+ *
+ * @param {vec4} out the receiving vector
+ * @param {ReadonlyVec4} a the vector to transform
+ * @param {ReadonlyQuat} q quaternion to transform with
+ * @returns {vec4} out
+ */
+
+function transformQuat$1(out, a, q) {
+  var x = a[0],
+      y = a[1],
+      z = a[2];
+  var qx = q[0],
+      qy = q[1],
+      qz = q[2],
+      qw = q[3]; // calculate quat * vec
+
+  var ix = qw * x + qy * z - qz * y;
+  var iy = qw * y + qz * x - qx * z;
+  var iz = qw * z + qx * y - qy * x;
+  var iw = -qx * x - qy * y - qz * z; // calculate result * inverse quat
+
+  out[0] = ix * qw + iw * -qx + iy * -qz - iz * -qy;
+  out[1] = iy * qw + iw * -qy + iz * -qx - ix * -qz;
+  out[2] = iz * qw + iw * -qz + ix * -qy - iy * -qx;
+  out[3] = a[3];
+  return out;
+}
+/**
+ * Set the components of a vec4 to zero
+ *
+ * @param {vec4} out the receiving vector
+ * @returns {vec4} out
+ */
+
+function zero$1(out) {
+  out[0] = 0.0;
+  out[1] = 0.0;
+  out[2] = 0.0;
+  out[3] = 0.0;
+  return out;
+}
+/**
+ * Returns a string representation of a vector
+ *
+ * @param {ReadonlyVec4} a vector to represent as a string
+ * @returns {String} string representation of the vector
+ */
+
+function str$2(a) {
+  return "vec4(" + a[0] + ", " + a[1] + ", " + a[2] + ", " + a[3] + ")";
 }
 /**
  * Returns whether or not the vectors have exactly the same elements in the same position (when compared with ===)
@@ -3028,6 +3365,48 @@ function equals$3(a, b) {
       b3 = b[3];
   return Math.abs(a0 - b0) <= EPSILON * Math.max(1.0, Math.abs(a0), Math.abs(b0)) && Math.abs(a1 - b1) <= EPSILON * Math.max(1.0, Math.abs(a1), Math.abs(b1)) && Math.abs(a2 - b2) <= EPSILON * Math.max(1.0, Math.abs(a2), Math.abs(b2)) && Math.abs(a3 - b3) <= EPSILON * Math.max(1.0, Math.abs(a3), Math.abs(b3));
 }
+/**
+ * Alias for {@link vec4.subtract}
+ * @function
+ */
+
+var sub$2 = subtract$2;
+/**
+ * Alias for {@link vec4.multiply}
+ * @function
+ */
+
+var mul$2 = multiply$2;
+/**
+ * Alias for {@link vec4.divide}
+ * @function
+ */
+
+var div$1 = divide$1;
+/**
+ * Alias for {@link vec4.distance}
+ * @function
+ */
+
+var dist$1 = distance$1;
+/**
+ * Alias for {@link vec4.squaredDistance}
+ * @function
+ */
+
+var sqrDist$1 = squaredDistance$1;
+/**
+ * Alias for {@link vec4.length}
+ * @function
+ */
+
+var len$1 = length$1;
+/**
+ * Alias for {@link vec4.squaredLength}
+ * @function
+ */
+
+var sqrLen$1 = squaredLength$1;
 /**
  * Perform some operation over an array of vec4s.
  *
@@ -3075,6 +3454,51 @@ var forEach$1 = function () {
     return a;
   };
 }();
+
+var vec4 = /*#__PURE__*/Object.freeze({
+  __proto__: null,
+  create: create$3,
+  clone: clone$2,
+  fromValues: fromValues$2,
+  copy: copy$2,
+  set: set$2,
+  add: add$2,
+  subtract: subtract$2,
+  multiply: multiply$2,
+  divide: divide$1,
+  ceil: ceil$1,
+  floor: floor$1,
+  min: min$1,
+  max: max$1,
+  round: round$1,
+  scale: scale$2,
+  scaleAndAdd: scaleAndAdd$1,
+  distance: distance$1,
+  squaredDistance: squaredDistance$1,
+  length: length$1,
+  squaredLength: squaredLength$1,
+  negate: negate$1,
+  inverse: inverse$1,
+  normalize: normalize$1,
+  dot: dot$1,
+  cross: cross$1,
+  lerp: lerp$1,
+  random: random$1,
+  transformMat4: transformMat4$1,
+  transformQuat: transformQuat$1,
+  zero: zero$1,
+  str: str$2,
+  exactEquals: exactEquals$2,
+  equals: equals$3,
+  sub: sub$2,
+  mul: mul$2,
+  div: div$1,
+  dist: dist$1,
+  sqrDist: sqrDist$1,
+  len: len$1,
+  sqrLen: sqrLen$1,
+  forEach: forEach$1
+});
 
 /**
  * Quaternion
@@ -3184,7 +3608,7 @@ function getAngle(a, b) {
  * @returns {quat} out
  */
 
-function multiply$2(out, a, b) {
+function multiply$3(out, a, b) {
   var ax = a[0],
       ay = a[1],
       az = a[2],
@@ -3407,7 +3831,7 @@ function slerp(out, a, b, t) {
  * @returns {quat} out
  */
 
-function random$1(out) {
+function random$2(out) {
   // Implementation of http://planning.cs.uiuc.edu/node198.html
   // TODO: Calling random 3 times is probably not the fastest solution
   var u1 = RANDOM();
@@ -3539,7 +3963,7 @@ function fromEuler(out, x, y, z) {
  * @returns {String} string representation of the vector
  */
 
-function str$2(a) {
+function str$3(a) {
   return "quat(" + a[0] + ", " + a[1] + ", " + a[2] + ", " + a[3] + ")";
 }
 /**
@@ -3602,7 +4026,7 @@ var add$3 = add$2;
  * @function
  */
 
-var mul$2 = multiply$2;
+var mul$3 = multiply$3;
 /**
  * Scales a quat by a scalar number
  *
@@ -3649,7 +4073,7 @@ var length$2 = length$1;
  * @function
  */
 
-var len$1 = length$2;
+var len$2 = length$2;
 /**
  * Calculates the squared length of a quat
  *
@@ -3664,7 +4088,7 @@ var squaredLength$2 = squaredLength$1;
  * @function
  */
 
-var sqrLen$1 = squaredLength$2;
+var sqrLen$2 = squaredLength$2;
 /**
  * Normalize a quat
  *
@@ -3790,7 +4214,7 @@ var quat = /*#__PURE__*/Object.freeze({
   setAxisAngle: setAxisAngle,
   getAxisAngle: getAxisAngle,
   getAngle: getAngle,
-  multiply: multiply$2,
+  multiply: multiply$3,
   rotateX: rotateX$2,
   rotateY: rotateY$2,
   rotateZ: rotateZ$2,
@@ -3799,25 +4223,25 @@ var quat = /*#__PURE__*/Object.freeze({
   ln: ln,
   pow: pow,
   slerp: slerp,
-  random: random$1,
+  random: random$2,
   invert: invert$1,
   conjugate: conjugate,
   fromMat3: fromMat3,
   fromEuler: fromEuler,
-  str: str$2,
+  str: str$3,
   clone: clone$3,
   fromValues: fromValues$3,
   copy: copy$3,
   set: set$3,
   add: add$3,
-  mul: mul$2,
+  mul: mul$3,
   scale: scale$3,
   dot: dot$2,
   lerp: lerp$2,
   length: length$2,
-  len: len$1,
+  len: len$2,
   squaredLength: squaredLength$2,
-  sqrLen: sqrLen$1,
+  sqrLen: sqrLen$2,
   normalize: normalize$2,
   exactEquals: exactEquals$3,
   equals: equals$4,
@@ -3924,7 +4348,7 @@ function add$4(out, a, b) {
  * @returns {vec2} out
  */
 
-function subtract$2(out, a, b) {
+function subtract$3(out, a, b) {
   out[0] = a[0] - b[0];
   out[1] = a[1] - b[1];
   return out;
@@ -3938,7 +4362,7 @@ function subtract$2(out, a, b) {
  * @returns {vec2} out
  */
 
-function multiply$3(out, a, b) {
+function multiply$4(out, a, b) {
   out[0] = a[0] * b[0];
   out[1] = a[1] * b[1];
   return out;
@@ -3952,7 +4376,7 @@ function multiply$3(out, a, b) {
  * @returns {vec2} out
  */
 
-function divide$1(out, a, b) {
+function divide$2(out, a, b) {
   out[0] = a[0] / b[0];
   out[1] = a[1] / b[1];
   return out;
@@ -3965,7 +4389,7 @@ function divide$1(out, a, b) {
  * @returns {vec2} out
  */
 
-function ceil$1(out, a) {
+function ceil$2(out, a) {
   out[0] = Math.ceil(a[0]);
   out[1] = Math.ceil(a[1]);
   return out;
@@ -3978,7 +4402,7 @@ function ceil$1(out, a) {
  * @returns {vec2} out
  */
 
-function floor$1(out, a) {
+function floor$2(out, a) {
   out[0] = Math.floor(a[0]);
   out[1] = Math.floor(a[1]);
   return out;
@@ -3992,7 +4416,7 @@ function floor$1(out, a) {
  * @returns {vec2} out
  */
 
-function min$1(out, a, b) {
+function min$2(out, a, b) {
   out[0] = Math.min(a[0], b[0]);
   out[1] = Math.min(a[1], b[1]);
   return out;
@@ -4006,7 +4430,7 @@ function min$1(out, a, b) {
  * @returns {vec2} out
  */
 
-function max$1(out, a, b) {
+function max$2(out, a, b) {
   out[0] = Math.max(a[0], b[0]);
   out[1] = Math.max(a[1], b[1]);
   return out;
@@ -4019,7 +4443,7 @@ function max$1(out, a, b) {
  * @returns {vec2} out
  */
 
-function round$1(out, a) {
+function round$2(out, a) {
   out[0] = Math.round(a[0]);
   out[1] = Math.round(a[1]);
   return out;
@@ -4048,7 +4472,7 @@ function scale$4(out, a, b) {
  * @returns {vec2} out
  */
 
-function scaleAndAdd$1(out, a, b, scale) {
+function scaleAndAdd$2(out, a, b, scale) {
   out[0] = a[0] + b[0] * scale;
   out[1] = a[1] + b[1] * scale;
   return out;
@@ -4061,7 +4485,7 @@ function scaleAndAdd$1(out, a, b, scale) {
  * @returns {Number} distance between a and b
  */
 
-function distance$1(a, b) {
+function distance$2(a, b) {
   var x = b[0] - a[0],
       y = b[1] - a[1];
   return Math.hypot(x, y);
@@ -4074,7 +4498,7 @@ function distance$1(a, b) {
  * @returns {Number} squared distance between a and b
  */
 
-function squaredDistance$1(a, b) {
+function squaredDistance$2(a, b) {
   var x = b[0] - a[0],
       y = b[1] - a[1];
   return x * x + y * y;
@@ -4111,7 +4535,7 @@ function squaredLength$3(a) {
  * @returns {vec2} out
  */
 
-function negate$1(out, a) {
+function negate$2(out, a) {
   out[0] = -a[0];
   out[1] = -a[1];
   return out;
@@ -4124,7 +4548,7 @@ function negate$1(out, a) {
  * @returns {vec2} out
  */
 
-function inverse$1(out, a) {
+function inverse$2(out, a) {
   out[0] = 1.0 / a[0];
   out[1] = 1.0 / a[1];
   return out;
@@ -4172,7 +4596,7 @@ function dot$3(a, b) {
  * @returns {vec3} out
  */
 
-function cross$1(out, a, b) {
+function cross$2(out, a, b) {
   var z = a[0] * b[1] - a[1] * b[0];
   out[0] = out[1] = 0;
   out[2] = z;
@@ -4203,7 +4627,7 @@ function lerp$3(out, a, b, t) {
  * @returns {vec2} out
  */
 
-function random$2(out, scale) {
+function random$3(out, scale) {
   scale = scale || 1.0;
   var r = RANDOM() * 2.0 * Math.PI;
   out[0] = Math.cos(r) * scale;
@@ -4270,7 +4694,7 @@ function transformMat3$1(out, a, m) {
  * @returns {vec2} out
  */
 
-function transformMat4$1(out, a, m) {
+function transformMat4$2(out, a, m) {
   var x = a[0];
   var y = a[1];
   out[0] = m[0] * x + m[4] * y + m[12];
@@ -4323,7 +4747,7 @@ function angle$1(a, b) {
  * @returns {vec2} out
  */
 
-function zero$1(out) {
+function zero$2(out) {
   out[0] = 0.0;
   out[1] = 0.0;
   return out;
@@ -4335,7 +4759,7 @@ function zero$1(out) {
  * @returns {String} string representation of the vector
  */
 
-function str$3(a) {
+function str$4(a) {
   return "vec2(" + a[0] + ", " + a[1] + ")";
 }
 /**
@@ -4369,43 +4793,43 @@ function equals$5(a, b) {
  * @function
  */
 
-var len$2 = length$3;
+var len$3 = length$3;
 /**
  * Alias for {@link vec2.subtract}
  * @function
  */
 
-var sub$2 = subtract$2;
+var sub$3 = subtract$3;
 /**
  * Alias for {@link vec2.multiply}
  * @function
  */
 
-var mul$3 = multiply$3;
+var mul$4 = multiply$4;
 /**
  * Alias for {@link vec2.divide}
  * @function
  */
 
-var div$1 = divide$1;
+var div$2 = divide$2;
 /**
  * Alias for {@link vec2.distance}
  * @function
  */
 
-var dist$1 = distance$1;
+var dist$2 = distance$2;
 /**
  * Alias for {@link vec2.squaredDistance}
  * @function
  */
 
-var sqrDist$1 = squaredDistance$1;
+var sqrDist$2 = squaredDistance$2;
 /**
  * Alias for {@link vec2.squaredLength}
  * @function
  */
 
-var sqrLen$2 = squaredLength$3;
+var sqrLen$3 = squaredLength$3;
 /**
  * Perform some operation over an array of vec2s.
  *
@@ -4458,45 +4882,45 @@ var vec2 = /*#__PURE__*/Object.freeze({
   copy: copy$4,
   set: set$4,
   add: add$4,
-  subtract: subtract$2,
-  multiply: multiply$3,
-  divide: divide$1,
-  ceil: ceil$1,
-  floor: floor$1,
-  min: min$1,
-  max: max$1,
-  round: round$1,
+  subtract: subtract$3,
+  multiply: multiply$4,
+  divide: divide$2,
+  ceil: ceil$2,
+  floor: floor$2,
+  min: min$2,
+  max: max$2,
+  round: round$2,
   scale: scale$4,
-  scaleAndAdd: scaleAndAdd$1,
-  distance: distance$1,
-  squaredDistance: squaredDistance$1,
+  scaleAndAdd: scaleAndAdd$2,
+  distance: distance$2,
+  squaredDistance: squaredDistance$2,
   length: length$3,
   squaredLength: squaredLength$3,
-  negate: negate$1,
-  inverse: inverse$1,
+  negate: negate$2,
+  inverse: inverse$2,
   normalize: normalize$3,
   dot: dot$3,
-  cross: cross$1,
+  cross: cross$2,
   lerp: lerp$3,
-  random: random$2,
+  random: random$3,
   transformMat2: transformMat2,
   transformMat2d: transformMat2d,
   transformMat3: transformMat3$1,
-  transformMat4: transformMat4$1,
+  transformMat4: transformMat4$2,
   rotate: rotate$1,
   angle: angle$1,
-  zero: zero$1,
-  str: str$3,
+  zero: zero$2,
+  str: str$4,
   exactEquals: exactEquals$4,
   equals: equals$5,
-  len: len$2,
-  sub: sub$2,
-  mul: mul$3,
-  div: div$1,
-  dist: dist$1,
-  sqrDist: sqrDist$1,
-  sqrLen: sqrLen$2,
+  len: len$3,
+  sub: sub$3,
+  mul: mul$4,
+  div: div$2,
+  dist: dist$2,
+  sqrDist: sqrDist$2,
+  sqrLen: sqrLen$3,
   forEach: forEach$2
 });
 
-export { common as glMatrix, mat4, quat, vec2, vec3 };
+export { common as glMatrix, mat4, quat, vec2, vec3, vec4 };

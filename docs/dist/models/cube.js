@@ -1,5 +1,5 @@
 import normals from "../../web/angle-normals.js";
-var cubePosition = [
+const cubePosition = [
   [-0.5, 0.5, 0.5],
   [0.5, 0.5, 0.5],
   [0.5, -0.5, 0.5],
@@ -25,7 +25,7 @@ var cubePosition = [
   [0.5, -0.5, 0.5],
   [-0.5, -0.5, 0.5]
 ];
-var cubeUv = [
+const cubeUv = [
   [0, 0],
   [1, 0],
   [1, 1],
