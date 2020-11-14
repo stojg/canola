@@ -86,10 +86,10 @@ const main = (assets) => {
     vert: assets["main.vsh"],
     cull: {enable: true, face: "back"},
     uniforms: {
-      "shadowCube[0]": lights2.shadowFBO(regl2, 0),
-      "shadowCube[1]": lights2.shadowFBO(regl2, 1),
-      "shadowCube[2]": lights2.shadowFBO(regl2, 2),
-      "shadowCube[3]": lights2.shadowFBO(regl2, 3)
+      "shadowCubes[0]": lights2.shadowFBO(regl2, 0),
+      "shadowCubes[1]": lights2.shadowFBO(regl2, 1),
+      "shadowCubes[2]": lights2.shadowFBO(regl2, 2),
+      "shadowCubes[3]": lights2.shadowFBO(regl2, 3)
     }
   });
   const bunnyProps = [

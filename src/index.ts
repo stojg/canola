@@ -104,10 +104,10 @@ const main = (assets: Assets) => {
     vert: assets['main.vsh'],
     cull: { enable: true, face: 'back' },
     uniforms: {
-      'shadowCube[0]': lights.shadowFBO(regl, 0),
-      'shadowCube[1]': lights.shadowFBO(regl, 1),
-      'shadowCube[2]': lights.shadowFBO(regl, 2),
-      'shadowCube[3]': lights.shadowFBO(regl, 3),
+      'shadowCubes[0]': lights.shadowFBO(regl, 0),
+      'shadowCubes[1]': lights.shadowFBO(regl, 1),
+      'shadowCubes[2]': lights.shadowFBO(regl, 2),
+      'shadowCubes[3]': lights.shadowFBO(regl, 3),
     },
   })
 

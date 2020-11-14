@@ -1,4 +1,4 @@
-precision lowp float;
+precision mediump float;
 
 const float PI = 3.14159265359;
 
@@ -7,7 +7,18 @@ uniform vec3  albedo;
 uniform float metallic;
 uniform float roughness;
 uniform float ao;
-uniform samplerCube shadowCube[4];
+
+#define numLights 4
+uniform samplerCube shadowCubes[numLights];
+
+vec4 getSampleFromArray(samplerCube textures[4], int ndx, vec3 uv) {
+    for (int i = 0; i < numLights; ++i) {
+        if (i == ndx) {
+            return textureCube(shadowCubes[i], uv);
+        }
+    }
+    return vec4(1.0, 1.0, 1.0, 1.0);
+}
 
 // lights
 struct Light {
@@ -15,7 +26,7 @@ struct Light {
     vec4 position;
     bool on;
 };
-uniform Light lights[4];
+uniform Light lights[numLights];
 
 // camera
 uniform vec3 camPos;
@@ -85,7 +96,8 @@ void main()
         //            }
         //            visibility *= 0.125;
 
-        vec4 env = textureCube(shadowCube[i], direction * -1.0 * vec3(0.1));
+        vec4 env = getSampleFromArray(shadowCubes, i, direction * -1.0 * vec3(0.1));
+//        vec4 env = textureCube(shadowCubes[i], direction * -1.0 * vec3(0.1));
         visibility += (env.x + bias) < (distance) ? 0.0 : 1.0;
 
         Lo *= visibility;
