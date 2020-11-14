@@ -9,32 +9,20 @@ import { FPSControls } from './lib/controls'
 import { cube } from './models/cube'
 import createStatsWidget from 'regl-stats-widget'
 import { Model, ModelUniforms } from './lib/model'
+import { Lights } from './lib/lights'
 
 interface Assets extends Record<string, string> {}
 
 const xyz = (t: vec4) => vec3.fromValues(t[0], t[1], t[2])
 
-const CUBE_MAP_SIZE = 512
-
 const loading = {
   manifest: {
     // Each entry in the manifest represents an asset to be loaded
-    'main.fsh': {
-      type: 'text', // the type declares the type of the asset
-      src: 'shaders/main.fsh', // and src declares the URL of the asset
-    },
-    'main.vsh': {
-      type: 'text', // the type declares the type of the asset
-      src: 'shaders/main.vsh', // and src declares the URL of the asset
-    },
-    'pbr.fsh': {
-      type: 'text', // the type declares the type of the asset
-      src: 'shaders/pbr.fsh', // and src declares the URL of the asset
-    },
-    'pbr_shadow.fsh': {
-      type: 'text', // the type declares the type of the asset
-      src: 'shaders/pbr_shadow.fsh', // and src declares the URL of the asset
-    },
+    'main.fsh': { type: 'text', src: 'shaders/main.fsh' },
+    'main.vsh': { type: 'text', src: 'shaders/main.vsh' },
+    'pbr.fsh': { type: 'text', src: 'shaders/pbr.fsh' },
+    'pbr_shadow.fsh': { type: 'text', src: 'shaders/pbr_shadow.fsh' },
+    'light_cube.fsh': { type: 'text', src: 'shaders/light_cube.fsh' },
   },
   onProgress: (progress: any, message: any) => {
     console.log(progress, message)
@@ -64,59 +52,62 @@ const main = (assets: Assets) => {
   const controls = new FPSControls(regl._gl.canvas as HTMLCanvasElement)
   const camera = createCamera(regl, controls, { position: [0, 3, 10] })
 
-  interface LightUniforms {
-    'lights[0].on': boolean
-    'lights[0].color': vec3
-    'lights[0].position': vec4
-    'lights[1].on': boolean
-    'lights[1].color': vec3
-    'lights[1].position': vec4
-    'lights[2].on': boolean
-    'lights[2].color': vec3
-    'lights[2].position': vec4
-    'lights[3].on': boolean
-    'lights[3].color': vec3
-    'lights[3].position': vec4
-  }
+  const lights = new Lights()
+  lights.add(true, [10, 10, 10], [0, 3, 0, 1])
+  lights.add(true, [100, 0, 0], [3, 3, 3, 1])
+  lights.add(true, [0, 100, 0], [-3, 3, 3, 1])
+  lights.add(true, [0, 0, 100], [3, 3, -3, 1])
 
-  const lights = [
-    { on: true, color: vec3.fromValues(100, 100, 100), pos: vec4.fromValues(0, 3, 0, 1) },
-    // { on: true, color: vec3.fromValues(100, 100, 100), pos: vec4.fromValues(-3, 3, -3, 1) },
-    { on: false, color: vec3.fromValues(100, 0, 0), pos: vec4.fromValues(3, 3, 3, 1) },
-    { on: false, color: vec3.fromValues(0, 100, 0), pos: vec4.fromValues(-3, 3, 3, 1) },
-    { on: false, color: vec3.fromValues(0, 0, 100), pos: vec4.fromValues(3, 3, -3, 1) },
-  ]
   const lightProps: any = []
-  for (const i in lights) {
-    if (!lights[i].on) continue
-    lightProps.push(
-      new Model(
-        {
-          albedo: lights[i].color,
-          metallic: 0,
-          roughness: 0.025,
-          ao: 1.0,
+  lights.all().forEach((light, i) => {
+    if (!light.on) return
+    const mtrl = { albedo: light.color, metallic: 0, roughness: 0.025, ao: 1.0 }
+    lightProps.push(new Model(mtrl, xyz(light.pos), 0.05))
+  })
+
+  function lightCubeDraw(lightId: number): REGL.DrawConfig {
+    const shadowFbo = lights.shadowFBO(regl, lightId)
+    return {
+      uniforms: {
+        projection: mat4.perspective(mat4.create(), glMatrix.toRadian(90), 1, 0.25, 30.0),
+        view: function (context: REGL.DefaultContext, props: any, batchId: number) {
+          switch (batchId) {
+            case 0: // +x right
+              return mat4.lookAt(mat4.create(), xyz(lights.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(1, 0, 0), xyz(lights.get(lightId).pos)), [0, -1, 0])
+            case 1: // -x left
+              return mat4.lookAt(mat4.create(), xyz(lights.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(-1, 0, 0), xyz(lights.get(lightId).pos)), [0, -1, 0])
+            case 2: // +y top
+              return mat4.lookAt(mat4.create(), xyz(lights.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, 1, 0), xyz(lights.get(lightId).pos)), [0, 0, 1])
+            case 3: // -y bottom
+              return mat4.lookAt(mat4.create(), xyz(lights.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, -1, 0), xyz(lights.get(lightId).pos)), [0, 0, -1])
+            case 4: // +z near
+              return mat4.lookAt(mat4.create(), xyz(lights.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, 0, 1), xyz(lights.get(lightId).pos)), [0, -1, 0])
+            case 5: // -z far
+              return mat4.lookAt(mat4.create(), xyz(lights.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, 0, -1), xyz(lights.get(lightId).pos)), [0, -1, 0])
+          }
         },
-        [lights[i].pos[0], lights[i].pos[1], lights[i].pos[2]],
-        0.05,
-      ),
-    )
+      },
+      frag: assets['light_cube.fsh'],
+      vert: assets['main.vsh'],
+      framebuffer: function (context, props, batchId) {
+        return shadowFbo.faces[batchId]
+      },
+    }
   }
 
-  const lightScope = regl<LightUniforms>({
+  // render point-light shadows into a cubemap
+  const drawDepth = [regl(lightCubeDraw(0)), regl(lightCubeDraw(1)), regl(lightCubeDraw(2)), regl(lightCubeDraw(3))]
+  const oneLightScope = [regl(lights.lightUniform(regl, 0)), regl(lights.lightUniform(regl, 1)), regl(lights.lightUniform(regl, 2)), regl(lights.lightUniform(regl, 3))]
+
+  const shadowDraw = regl({
+    frag: assets['pbr_shadow.fsh'],
+    vert: assets['main.vsh'],
+    cull: { enable: true, face: 'back' },
     uniforms: {
-      'lights[0].on': lights[0].on,
-      'lights[0].color': lights[0].color,
-      'lights[0].position': lights[0].pos,
-      'lights[1].on': lights[1].on,
-      'lights[1].color': lights[1].color,
-      'lights[1].position': lights[1].pos,
-      'lights[2].on': lights[2].on,
-      'lights[2].color': lights[2].color,
-      'lights[2].position': lights[2].pos,
-      'lights[3].on': lights[3].on,
-      'lights[3].color': lights[3].color,
-      'lights[3].position': lights[3].pos,
+      'shadowCube[0]': lights.shadowFBO(regl, 0),
+      'shadowCube[1]': lights.shadowFBO(regl, 1),
+      'shadowCube[2]': lights.shadowFBO(regl, 2),
+      'shadowCube[3]': lights.shadowFBO(regl, 3),
     },
   })
 
@@ -146,62 +137,10 @@ const main = (assets: Assets) => {
     ),
   ]
 
-  const shadowFbo = regl.framebufferCube({
-    radius: CUBE_MAP_SIZE,
-    colorFormat: 'rgba',
-    colorType: 'float',
-    stencil: false,
-  })
-
-  // render point-light shadows into a cubemap
-  const drawDepth = regl({
-    viewport: { x: 0, y: 0, width: CUBE_MAP_SIZE, height: CUBE_MAP_SIZE },
-    uniforms: {
-      projection: mat4.perspective(mat4.create(), glMatrix.toRadian(90), 1, 0.25, 30.0),
-      view: function (context, props, batchId) {
-        switch (batchId) {
-          case 0: // +x right
-            return mat4.lookAt(mat4.create(), xyz(lights[0].pos), vec3.add(vec3.create(), vec3.fromValues(1, 0, 0), xyz(lights[0].pos)), [0, -1, 0])
-          case 1: // -x left
-            return mat4.lookAt(mat4.create(), xyz(lights[0].pos), vec3.add(vec3.create(), vec3.fromValues(-1, 0, 0), xyz(lights[0].pos)), [0, -1, 0])
-          case 2: // +y top
-            return mat4.lookAt(mat4.create(), xyz(lights[0].pos), vec3.add(vec3.create(), vec3.fromValues(0, 1, 0), xyz(lights[0].pos)), [0, 0, 1])
-          case 3: // -y bottom
-            return mat4.lookAt(mat4.create(), xyz(lights[0].pos), vec3.add(vec3.create(), vec3.fromValues(0, -1, 0), xyz(lights[0].pos)), [0, 0, -1])
-          case 4: // +z near
-            return mat4.lookAt(mat4.create(), xyz(lights[0].pos), vec3.add(vec3.create(), vec3.fromValues(0, 0, 1), xyz(lights[0].pos)), [0, -1, 0])
-          case 5: // -z far
-            return mat4.lookAt(mat4.create(), xyz(lights[0].pos), vec3.add(vec3.create(), vec3.fromValues(0, 0, -1), xyz(lights[0].pos)), [0, -1, 0])
-        }
-      },
-    },
-    frag: `
-  precision mediump float;
-  // lights
-  struct Light {
-      vec3 color;
-      vec4 position;
-      bool on;
-  };
-  uniform Light lights[4];
-  varying vec3 vPosition;
-  void main () {
-    gl_FragColor = vec4(vec3(distance(vPosition, lights[0].position.xyz)), 1.0);
-  }`,
-    vert: `
-  precision mediump float;
-  attribute vec3 position;
-
-  varying vec3 vPosition;
-  uniform mat4 projection, view, model;
-  void main() {
-    vec4 p = model * vec4(position, 1.0);
-    vPosition = p.xyz;
-    gl_Position = projection * view * p;
-  }`,
-    framebuffer: function (context, props, batchId) {
-      return shadowFbo.faces[batchId]
-    },
+  const bunnyDraw = regl<ModelUniforms, MeshAttributes>({
+    elements: bunny.cells,
+    attributes: { position: bunny.positions, normal: normals(bunny.cells, bunny.positions) },
+    uniforms: Model.uniforms(regl),
   })
 
   const planeDraw = regl<ModelUniforms, MeshAttributes>({
@@ -210,26 +149,13 @@ const main = (assets: Assets) => {
     uniforms: Model.uniforms(regl),
   })
 
-  const bunnyDraw = regl<ModelUniforms, MeshAttributes>({
-    elements: bunny.cells,
-    attributes: { position: bunny.positions, normal: normals(bunny.cells, bunny.positions) },
-    uniforms: Model.uniforms(regl),
-  })
-
-  const lightDraw = regl<ModelUniforms, MeshAttributes>({
+  const lightBulbDraw = regl<ModelUniforms, MeshAttributes>({
     elements: cube.indices,
     attributes: { position: cube.positions, normal: cube.normals },
     uniforms: Model.uniforms(regl),
   })
 
-  const shadowDraw = regl({
-    frag: assets['pbr_shadow.fsh'],
-    vert: assets['main.vsh'],
-    cull: { enable: true, face: 'back' },
-    uniforms: {
-      shadowCube: shadowFbo,
-    },
-  })
+  const allLightScope = regl(lights.allUniforms(regl))
 
   const plainDraw = regl({
     frag: assets['main.fsh'],
@@ -240,16 +166,16 @@ const main = (assets: Assets) => {
   const statsWidget = createStatsWidget([
     [planeDraw, 'plane'],
     [bunnyDraw, 'bunnies'],
-    [lightDraw, 'lights'],
+    [lightBulbDraw, 'lights'],
   ])
 
-  regl.frame(({tick}) => {
+  regl.frame(({ tick }) => {
     const deltaTime = 0.017
     statsWidget.update(deltaTime)
 
-    if (tick % 2 == 0) {
-      lightScope(() => {
-        drawDepth(6, () => {
+    for (let i = 0; i < 4; i++) {
+      oneLightScope[i](() => {
+        drawDepth[i](6, () => {
           regl.clear({ depth: 1 })
           bunnyDraw(bunnyProps)
           planeDraw(planeProps)
@@ -259,7 +185,7 @@ const main = (assets: Assets) => {
 
     regl.clear({ color: [0.05, 0.05, 0.05, 1] })
     camera(() => {
-      lightScope(() => {
+      allLightScope(() => {
         shadowDraw(() => {
           bunnyDraw(bunnyProps)
           planeDraw(planeProps)
@@ -267,7 +193,7 @@ const main = (assets: Assets) => {
       })
 
       plainDraw(() => {
-        lightDraw(lightProps)
+        lightBulbDraw(lightProps)
       })
     })
   })

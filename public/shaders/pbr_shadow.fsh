@@ -1,4 +1,4 @@
-precision mediump float;
+precision lowp float;
 
 const float PI = 3.14159265359;
 
@@ -7,7 +7,7 @@ uniform vec3  albedo;
 uniform float metallic;
 uniform float roughness;
 uniform float ao;
-uniform samplerCube shadowCube;
+uniform samplerCube shadowCube[4];
 
 // lights
 struct Light {
@@ -39,13 +39,17 @@ void main()
 
     // reflectance equation
     vec3 Lo = vec3(0.0);
-    for(int i = 0; i < 4; ++i)
+
+    const int shadowCaster = 0;
+
+    for (int i = 0; i < 4; ++i)
     {
         if (!lights[i].on) {
             continue;
         }
         // calculate per-light radiance
-        vec3 L = normalize(lights[i].position.xyz - WorldPos);
+        vec3 direction = lights[i].position.xyz - WorldPos;
+        vec3 L = normalize(direction);
         vec3 H = normalize(V + L);
         float distance    = length(lights[i].position.xyz - WorldPos);
         float attenuation = 1.0 / (distance * distance);
@@ -67,25 +71,28 @@ void main()
         // add to outgoing radiance Lo
         float NdotL = max(dot(N, L), 0.0);
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;
-    }
 
-    vec3 texCoord = (WorldPos - lights[0].position.xyz);
-    float visibility = 0.0;
-    // do soft shadows:
-    const float bias = 0.3;
-    for (int x = 0; x < 2; x++) {
-        for (int y = 0; y < 2; y++) {
-            for (int z = 0; z < 2; z++) {
-                vec4 env = textureCube(shadowCube, texCoord + vec3(x,y,z) * vec3(0.1) );
-                visibility += (env.x+bias) < (distance(WorldPos, lights[0].position.xyz)) ? 0.0 : 1.0;
-            }
-        }
+        const float bias = 0.3;
+        float visibility = 0.0;
+        //            // do soft shadows:
+        //            for (int x = 0; x < 2; x++) {
+        //                for (int y = 0; y < 2; y++) {
+        //                    for (int z = 0; z < 2; z++) {
+        //                        vec4 env = textureCube(shadowCube[i], direction * -1.0 + vec3(x, y, z) * vec3(0.1));
+        //                        visibility += (env.x + bias) < (distance) ? 0.0 : 1.0;
+        //                    }
+        //                }
+        //            }
+        //            visibility *= 0.125;
+
+        vec4 env = textureCube(shadowCube[i], direction * -1.0 * vec3(0.1));
+        visibility += (env.x + bias) < (distance) ? 0.0 : 1.0;
+
+        Lo *= visibility;
     }
-    visibility *= 0.125;
 
     vec3 ambient = vec3(0.03) * albedo * ao;
     vec3 color = ambient + Lo;
-    color *= visibility;
 
     color = color / (color + vec3(1.0));
     color = pow(color, vec3(1.0/2.2));
