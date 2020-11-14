@@ -4,31 +4,20 @@ import {createCamera} from "./lib/camera.js";
 import bunny2 from "../web/bunny.js";
 import plane2 from "./models/plane.js";
 import normals from "../web/angle-normals.js";
-import {glMatrix, mat4, vec3, vec4} from "../web/gl-matrix.js";
+import {glMatrix, mat4, vec3} from "../web/gl-matrix.js";
 import {FPSControls} from "./lib/controls.js";
 import {cube as cube2} from "./models/cube.js";
 import createStatsWidget from "../web/regl-stats-widget.js";
 import {Model} from "./lib/model.js";
+import {Lights} from "./lib/lights.js";
 const xyz = (t) => vec3.fromValues(t[0], t[1], t[2]);
-const CUBE_MAP_SIZE = 512;
 const loading = {
   manifest: {
-    "main.fsh": {
-      type: "text",
-      src: "shaders/main.fsh"
-    },
-    "main.vsh": {
-      type: "text",
-      src: "shaders/main.vsh"
-    },
-    "pbr.fsh": {
-      type: "text",
-      src: "shaders/pbr.fsh"
-    },
-    "pbr_shadow.fsh": {
-      type: "text",
-      src: "shaders/pbr_shadow.fsh"
-    }
+    "main.fsh": {type: "text", src: "shaders/main.fsh"},
+    "main.vsh": {type: "text", src: "shaders/main.vsh"},
+    "pbr.fsh": {type: "text", src: "shaders/pbr.fsh"},
+    "pbr_shadow.fsh": {type: "text", src: "shaders/pbr_shadow.fsh"},
+    "light_cube.fsh": {type: "text", src: "shaders/light_cube.fsh"}
   },
   onProgress: (progress, message) => {
     console.log(progress, message);
@@ -49,37 +38,58 @@ const main = (assets) => {
   });
   const controls2 = new FPSControls(regl2._gl.canvas);
   const camera2 = createCamera(regl2, controls2, {position: [0, 3, 10]});
-  const lights = [
-    {on: true, color: vec3.fromValues(100, 100, 100), pos: vec4.fromValues(0, 3, 0, 1)},
-    {on: false, color: vec3.fromValues(100, 0, 0), pos: vec4.fromValues(3, 3, 3, 1)},
-    {on: false, color: vec3.fromValues(0, 100, 0), pos: vec4.fromValues(-3, 3, 3, 1)},
-    {on: false, color: vec3.fromValues(0, 0, 100), pos: vec4.fromValues(3, 3, -3, 1)}
-  ];
+  const lights2 = new Lights();
+  lights2.add(true, [10, 10, 10], [0, 3, 0, 1]);
+  lights2.add(true, [100, 0, 0], [3, 3, 3, 1]);
+  lights2.add(true, [0, 100, 0], [-3, 3, 3, 1]);
+  lights2.add(true, [0, 0, 100], [3, 3, -3, 1]);
   const lightProps = [];
-  for (const i in lights) {
-    if (!lights[i].on)
-      continue;
-    lightProps.push(new Model({
-      albedo: lights[i].color,
-      metallic: 0,
-      roughness: 0.025,
-      ao: 1
-    }, [lights[i].pos[0], lights[i].pos[1], lights[i].pos[2]], 0.05));
+  lights2.all().forEach((light, i) => {
+    if (!light.on)
+      return;
+    const mtrl = {albedo: light.color, metallic: 0, roughness: 0.025, ao: 1};
+    lightProps.push(new Model(mtrl, xyz(light.pos), 0.05));
+  });
+  function lightCubeDraw(lightId) {
+    const shadowFbo = lights2.shadowFBO(regl2, lightId);
+    return {
+      uniforms: {
+        projection: mat4.perspective(mat4.create(), glMatrix.toRadian(90), 1, 0.25, 30),
+        view: function(context, props, batchId) {
+          switch (batchId) {
+            case 0:
+              return mat4.lookAt(mat4.create(), xyz(lights2.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(1, 0, 0), xyz(lights2.get(lightId).pos)), [0, -1, 0]);
+            case 1:
+              return mat4.lookAt(mat4.create(), xyz(lights2.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(-1, 0, 0), xyz(lights2.get(lightId).pos)), [0, -1, 0]);
+            case 2:
+              return mat4.lookAt(mat4.create(), xyz(lights2.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, 1, 0), xyz(lights2.get(lightId).pos)), [0, 0, 1]);
+            case 3:
+              return mat4.lookAt(mat4.create(), xyz(lights2.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, -1, 0), xyz(lights2.get(lightId).pos)), [0, 0, -1]);
+            case 4:
+              return mat4.lookAt(mat4.create(), xyz(lights2.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, 0, 1), xyz(lights2.get(lightId).pos)), [0, -1, 0]);
+            case 5:
+              return mat4.lookAt(mat4.create(), xyz(lights2.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, 0, -1), xyz(lights2.get(lightId).pos)), [0, -1, 0]);
+          }
+        }
+      },
+      frag: assets["light_cube.fsh"],
+      vert: assets["main.vsh"],
+      framebuffer: function(context, props, batchId) {
+        return shadowFbo.faces[batchId];
+      }
+    };
   }
-  const lightScope = regl2({
+  const drawDepth = [regl2(lightCubeDraw(0)), regl2(lightCubeDraw(1)), regl2(lightCubeDraw(2)), regl2(lightCubeDraw(3))];
+  const oneLightScope = [regl2(lights2.lightUniform(regl2, 0)), regl2(lights2.lightUniform(regl2, 1)), regl2(lights2.lightUniform(regl2, 2)), regl2(lights2.lightUniform(regl2, 3))];
+  const shadowDraw = regl2({
+    frag: assets["pbr_shadow.fsh"],
+    vert: assets["main.vsh"],
+    cull: {enable: true, face: "back"},
     uniforms: {
-      "lights[0].on": lights[0].on,
-      "lights[0].color": lights[0].color,
-      "lights[0].position": lights[0].pos,
-      "lights[1].on": lights[1].on,
-      "lights[1].color": lights[1].color,
-      "lights[1].position": lights[1].pos,
-      "lights[2].on": lights[2].on,
-      "lights[2].color": lights[2].color,
-      "lights[2].position": lights[2].pos,
-      "lights[3].on": lights[3].on,
-      "lights[3].color": lights[3].color,
-      "lights[3].position": lights[3].pos
+      "shadowCube[0]": lights2.shadowFBO(regl2, 0),
+      "shadowCube[1]": lights2.shadowFBO(regl2, 1),
+      "shadowCube[2]": lights2.shadowFBO(regl2, 2),
+      "shadowCube[3]": lights2.shadowFBO(regl2, 3)
     }
   });
   const bunnyProps = [
@@ -100,84 +110,22 @@ const main = (assets) => {
       ao: 0
     }, [0, 0, 0], 20, 90, [1, 0, 0])
   ];
-  const shadowFbo = regl2.framebufferCube({
-    radius: CUBE_MAP_SIZE,
-    colorFormat: "rgba",
-    colorType: "float",
-    stencil: false
-  });
-  const drawDepth = regl2({
-    viewport: {x: 0, y: 0, width: CUBE_MAP_SIZE, height: CUBE_MAP_SIZE},
-    uniforms: {
-      projection: mat4.perspective(mat4.create(), glMatrix.toRadian(90), 1, 0.25, 30),
-      view: function(context, props, batchId) {
-        switch (batchId) {
-          case 0:
-            return mat4.lookAt(mat4.create(), xyz(lights[0].pos), vec3.add(vec3.create(), vec3.fromValues(1, 0, 0), xyz(lights[0].pos)), [0, -1, 0]);
-          case 1:
-            return mat4.lookAt(mat4.create(), xyz(lights[0].pos), vec3.add(vec3.create(), vec3.fromValues(-1, 0, 0), xyz(lights[0].pos)), [0, -1, 0]);
-          case 2:
-            return mat4.lookAt(mat4.create(), xyz(lights[0].pos), vec3.add(vec3.create(), vec3.fromValues(0, 1, 0), xyz(lights[0].pos)), [0, 0, 1]);
-          case 3:
-            return mat4.lookAt(mat4.create(), xyz(lights[0].pos), vec3.add(vec3.create(), vec3.fromValues(0, -1, 0), xyz(lights[0].pos)), [0, 0, -1]);
-          case 4:
-            return mat4.lookAt(mat4.create(), xyz(lights[0].pos), vec3.add(vec3.create(), vec3.fromValues(0, 0, 1), xyz(lights[0].pos)), [0, -1, 0]);
-          case 5:
-            return mat4.lookAt(mat4.create(), xyz(lights[0].pos), vec3.add(vec3.create(), vec3.fromValues(0, 0, -1), xyz(lights[0].pos)), [0, -1, 0]);
-        }
-      }
-    },
-    frag: `
-  precision mediump float;
-  // lights
-  struct Light {
-      vec3 color;
-      vec4 position;
-      bool on;
-  };
-  uniform Light lights[4];
-  varying vec3 vPosition;
-  void main () {
-    gl_FragColor = vec4(vec3(distance(vPosition, lights[0].position.xyz)), 1.0);
-  }`,
-    vert: `
-  precision mediump float;
-  attribute vec3 position;
-
-  varying vec3 vPosition;
-  uniform mat4 projection, view, model;
-  void main() {
-    vec4 p = model * vec4(position, 1.0);
-    vPosition = p.xyz;
-    gl_Position = projection * view * p;
-  }`,
-    framebuffer: function(context, props, batchId) {
-      return shadowFbo.faces[batchId];
-    }
+  const bunnyDraw = regl2({
+    elements: bunny2.cells,
+    attributes: {position: bunny2.positions, normal: normals(bunny2.cells, bunny2.positions)},
+    uniforms: Model.uniforms(regl2)
   });
   const planeDraw = regl2({
     elements: plane2.indices,
     attributes: {position: plane2.positions, normal: plane2.normals},
     uniforms: Model.uniforms(regl2)
   });
-  const bunnyDraw = regl2({
-    elements: bunny2.cells,
-    attributes: {position: bunny2.positions, normal: normals(bunny2.cells, bunny2.positions)},
-    uniforms: Model.uniforms(regl2)
-  });
-  const lightDraw = regl2({
+  const lightBulbDraw = regl2({
     elements: cube2.indices,
     attributes: {position: cube2.positions, normal: cube2.normals},
     uniforms: Model.uniforms(regl2)
   });
-  const shadowDraw = regl2({
-    frag: assets["pbr_shadow.fsh"],
-    vert: assets["main.vsh"],
-    cull: {enable: true, face: "back"},
-    uniforms: {
-      shadowCube: shadowFbo
-    }
-  });
+  const allLightScope = regl2(lights2.allUniforms(regl2));
   const plainDraw = regl2({
     frag: assets["main.fsh"],
     vert: assets["main.vsh"],
@@ -186,14 +134,14 @@ const main = (assets) => {
   const statsWidget = createStatsWidget([
     [planeDraw, "plane"],
     [bunnyDraw, "bunnies"],
-    [lightDraw, "lights"]
+    [lightBulbDraw, "lights"]
   ]);
   regl2.frame(({tick}) => {
     const deltaTime = 0.017;
     statsWidget.update(deltaTime);
-    if (tick % 2 == 0) {
-      lightScope(() => {
-        drawDepth(6, () => {
+    for (let i = 0; i < 4; i++) {
+      oneLightScope[i](() => {
+        drawDepth[i](6, () => {
           regl2.clear({depth: 1});
           bunnyDraw(bunnyProps);
           planeDraw(planeProps);
@@ -202,14 +150,14 @@ const main = (assets) => {
     }
     regl2.clear({color: [0.05, 0.05, 0.05, 1]});
     camera2(() => {
-      lightScope(() => {
+      allLightScope(() => {
         shadowDraw(() => {
           bunnyDraw(bunnyProps);
           planeDraw(planeProps);
         });
       });
       plainDraw(() => {
-        lightDraw(lightProps);
+        lightBulbDraw(lightProps);
       });
     });
   });
