@@ -10,8 +10,10 @@ import { cube } from './models/cube'
 import createStatsWidget from 'regl-stats-widget'
 import { Model, ModelUniforms } from './lib/model'
 import { Lights } from './lib/lights'
+import { errorLogger, printLimits } from './lib/shame'
 
-interface Assets extends Record<string, string> {}
+interface Assets extends Record<string, string> {
+}
 
 const xyz = (t: vec4) => vec3.fromValues(t[0], t[1], t[2])
 
@@ -25,7 +27,7 @@ const loading = {
     'pbr_shadow.fsh': { type: 'text', src: 'shaders/pbr_shadow.fsh' },
     'light_cube.fsh': { type: 'text', src: 'shaders/light_cube.fsh' },
   },
-  onProgress: (progress: any, message: any) => {
+  onProgress: (progress: number, message: any) => {
     console.log(progress, message)
   },
   onError: (err: Error) => {
@@ -43,21 +45,28 @@ interface MeshAttributes {
 
 resl(loading)
 
+
 const main = (assets: Assets) => {
   const regl = REGL({
-    extensions: ['oes_texture_float', 'ext_disjoint_timer_query'],
+    extensions: [
+      'oes_texture_float',
+      'ext_disjoint_timer_query',
+    ],
     profile: true,
     attributes: { antialias: true },
   })
+
+  printLimits(regl)
+  errorLogger()
 
   const controls = new FPSControls(regl._gl.canvas as HTMLCanvasElement)
   const camera = createCamera(regl, controls, { position: [0, 3, 10] })
 
   const lights = new Lights()
   lights.add(true, [10, 10, 10], [-3, 3, -3, 1])
-  lights.add(true, [10, 0, 0], [3, 3, 3, 1])
-  lights.add(true, [0, 10, 0], [-3, 3, 3, 1])
-  lights.add(true, [0, 0, 10], [3, 3, -3, 1])
+  lights.add(false, [10, 0, 0], [3, 3, 3, 1])
+  lights.add(false, [0, 10, 0], [-3, 3, 3, 1])
+  lights.add(false, [0, 0, 10], [3, 3, -3, 1])
 
   const lightProps: any = []
   lights.all().forEach((light, i) => {
@@ -74,7 +83,7 @@ const main = (assets: Assets) => {
       cull: { enable: true, face: 'back' },
       uniforms: {
         projection: mat4.perspective(mat4.create(), glMatrix.toRadian(90), 1, 0.25, 30.0),
-        view: function (context: REGL.DefaultContext, props: any, batchId: number) {
+        view: function(context: REGL.DefaultContext, props: any, batchId: number) {
           switch (batchId) {
             case 0: // +x right
               return mat4.lookAt(mat4.create(), xyz(lights.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(1, 0, 0), xyz(lights.get(lightId).pos)), [0, -1, 0])
@@ -91,7 +100,7 @@ const main = (assets: Assets) => {
           }
         },
       },
-      framebuffer: function (context, props, batchId) {
+      framebuffer: function(context, props, batchId) {
         return shadowFbo.faces[batchId]
       },
     }
