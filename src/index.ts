@@ -20,6 +20,7 @@ const loading = {
     // Each entry in the manifest represents an asset to be loaded
     'main.fsh': { type: 'text', src: 'shaders/main.fsh' },
     'main.vsh': { type: 'text', src: 'shaders/main.vsh' },
+    'emissive.fsh': { type: 'text', src: 'shaders/emissive.fsh' },
     'pbr.fsh': { type: 'text', src: 'shaders/pbr.fsh' },
     'pbr_shadow.fsh': { type: 'text', src: 'shaders/pbr_shadow.fsh' },
     'light_cube.fsh': { type: 'text', src: 'shaders/light_cube.fsh' },
@@ -53,10 +54,10 @@ const main = (assets: Assets) => {
   const camera = createCamera(regl, controls, { position: [0, 3, 10] })
 
   const lights = new Lights()
-  lights.add(true, [10, 10, 10], [0, 3, 0, 1])
-  lights.add(true, [100, 0, 0], [3, 3, 3, 1])
-  lights.add(true, [0, 100, 0], [-3, 3, 3, 1])
-  lights.add(true, [0, 0, 100], [3, 3, -3, 1])
+  lights.add(true, [10, 10, 10], [-3, 3, -3, 1])
+  lights.add(true, [10, 0, 0], [3, 3, 3, 1])
+  lights.add(true, [0, 10, 0], [-3, 3, 3, 1])
+  lights.add(true, [0, 0, 10], [3, 3, -3, 1])
 
   const lightProps: any = []
   lights.all().forEach((light, i) => {
@@ -68,6 +69,9 @@ const main = (assets: Assets) => {
   function lightCubeDraw(lightId: number): REGL.DrawConfig {
     const shadowFbo = lights.shadowFBO(regl, lightId)
     return {
+      frag: assets['light_cube.fsh'],
+      vert: assets['main.vsh'],
+      cull: { enable: true, face: 'back' },
       uniforms: {
         projection: mat4.perspective(mat4.create(), glMatrix.toRadian(90), 1, 0.25, 30.0),
         view: function (context: REGL.DefaultContext, props: any, batchId: number) {
@@ -87,8 +91,6 @@ const main = (assets: Assets) => {
           }
         },
       },
-      frag: assets['light_cube.fsh'],
-      vert: assets['main.vsh'],
       framebuffer: function (context, props, batchId) {
         return shadowFbo.faces[batchId]
       },
@@ -111,30 +113,16 @@ const main = (assets: Assets) => {
     },
   })
 
+  const scale = 0.2
   const bunnyProps = [
-    new Model({ albedo: [0.55, 0.55, 0.6], metallic: 0.25, roughness: 0.82, ao: 0.05 }, [0, 0, 0], 0.2, 45),
-    new Model({ albedo: [0.69, 0.27, 0.2], metallic: 0.2, roughness: 0.75, ao: 0.05 }, [4, 0, 4], 0.2, -45),
-    new Model({ albedo: [0.0, 0.5, 0.0], metallic: 0.0, roughness: 0.025, ao: 0.05 }, [-4, 0, 4], 0.2, 90),
-    new Model({ albedo: [0.0, 0.5, 0.9], metallic: 5, roughness: 0.025, ao: 0.05 }, [-2, 0, 4], 0.2, 35),
-    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025, ao: 0.05 }, [-6, 0, -6], 0.2, 70),
-    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025, ao: 0.05 }, [4, 0, -6], 0.2, 35),
-    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025, ao: 0.05 }, [6, 0, -5], 0.2, -43),
-    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025, ao: 0.05 }, [1, 0, -4], 0.2, -70),
-  ]
-
-  const planeProps = [
-    new Model(
-      {
-        albedo: [0.42, 0.4, 0.38],
-        metallic: 0.69,
-        roughness: 0.08,
-        ao: 0.0,
-      },
-      [0, 0, 0],
-      20,
-      90,
-      [1, 0, 0],
-    ),
+    new Model({ albedo: [0.55, 0.55, 0.6], metallic: 0.25, roughness: 0.82, ao: 0.05 }, [0, 0, 0], scale, 45),
+    new Model({ albedo: [0.69, 0.27, 0.2], metallic: 0.2, roughness: 0.75, ao: 0.05 }, [4, 0, 4], scale, -45),
+    new Model({ albedo: [0.0, 0.5, 0.0], metallic: 0.0, roughness: 0.025, ao: 0.05 }, [-4, 0, 4], scale, 90),
+    new Model({ albedo: [0.0, 0.5, 0.9], metallic: 5, roughness: 0.025, ao: 0.05 }, [-2, 0, 4], scale, 35),
+    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025, ao: 0.05 }, [-6, 0, -6], scale, 70),
+    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025, ao: 0.05 }, [4, 0, -6], scale, 35),
+    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025, ao: 0.05 }, [6, 0, -5], scale, -43),
+    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025, ao: 0.05 }, [1, 0, -4], scale, -70),
   ]
 
   const bunnyDraw = regl<ModelUniforms, MeshAttributes>({
@@ -142,6 +130,21 @@ const main = (assets: Assets) => {
     attributes: { position: bunny.positions, normal: normals(bunny.cells, bunny.positions) },
     uniforms: Model.uniforms(regl),
   })
+
+  const planeProps = [
+    new Model(
+      {
+        albedo: [0.42, 0.4, 0.38],
+        metallic: 0.0,
+        roughness: 1.0,
+        ao: 0.05,
+      },
+      [0, 0, 0],
+      20,
+      90,
+      [1, 0, 0],
+    ),
+  ]
 
   const planeDraw = regl<ModelUniforms, MeshAttributes>({
     elements: plane.indices,
@@ -163,20 +166,33 @@ const main = (assets: Assets) => {
     cull: { enable: true, face: 'back' },
   })
 
+  const emissiveDraw = regl({
+    frag: assets['emissive.fsh'],
+    vert: assets['main.vsh'],
+    cull: { enable: true, face: 'back' },
+  })
+
   const statsWidget = createStatsWidget([
+    [drawDepth[0], 'drawDepth0'],
+    [drawDepth[1], 'drawDepth1'],
+    [drawDepth[2], 'drawDepth2'],
+    [drawDepth[3], 'drawDepth3'],
     [planeDraw, 'plane'],
     [bunnyDraw, 'bunnies'],
     [lightBulbDraw, 'lights'],
   ])
 
   regl.frame(({ tick }) => {
-    const deltaTime = 0.017
+    const deltaTime = 0.01666666
     statsWidget.update(deltaTime)
 
     for (let i = 0; i < 4; i++) {
+      if (!lights.get(i).on) {
+        continue
+      }
       oneLightScope[i](() => {
         drawDepth[i](6, () => {
-          regl.clear({ depth: 1 })
+          regl.clear({ depth: 1, color: [1, 1, 1, 1] })
           bunnyDraw(bunnyProps)
           planeDraw(planeProps)
         })
@@ -192,7 +208,7 @@ const main = (assets: Assets) => {
         })
       })
 
-      plainDraw(() => {
+      emissiveDraw(() => {
         lightBulbDraw(lightProps)
       })
     })
