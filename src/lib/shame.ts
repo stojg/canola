@@ -19,19 +19,18 @@ export function printLimits(regl: REGL.Regl) {
   document.body.appendChild(container)
 }
 
-export function errorLogger() {
+export function debugLogger() {
   if (typeof console != 'undefined') {
-    if (typeof console.error != 'undefined') {
+    if (typeof console.debug != 'undefined') {
       // @ts-ignore
-      console.olog = console.error
+      console.olog = console.debug
     } else {
       // @ts-ignore
-      console.olog = () => {
-      }
+      console.olog = () => {}
     }
   }
   const debugContainer = document.createElement('div')
-  debugContainer.style.cssText = 'position:fixed;top:20px;left:20px;opacity:1.0;background:#fff;z-index:10000;'
+  debugContainer.style.cssText = 'position:fixed;top:2px;left:2px;opacity:1.0;background:#fff;z-index:10001;'
   document.body.appendChild(debugContainer)
   console.error = (message: string) => {
     // @ts-ignore
@@ -42,4 +41,3 @@ export function errorLogger() {
     debugContainer.appendChild(p)
   }
 }
-

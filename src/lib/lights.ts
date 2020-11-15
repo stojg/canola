@@ -1,5 +1,6 @@
 import type { vec3, vec4 } from 'gl-matrix'
 import type REGL from 'regl'
+import { textureFloatExt } from './cap'
 
 interface Light {
   on: boolean
@@ -12,7 +13,7 @@ const CUBE_MAP_SIZE = 512
 const shadowConfig: REGL.FramebufferCubeOptions = {
   radius: CUBE_MAP_SIZE,
   colorFormat: 'rgba',
-  colorType: 'float',
+  colorType: textureFloatExt() ? 'float' : 'half float',
   stencil: false,
 }
 
