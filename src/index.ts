@@ -12,6 +12,7 @@ import { Model, ModelUniforms } from './lib/model'
 import { Lights } from './lib/lights'
 import { debugLogger } from './lib/shame'
 import { halfFloatTextureExt, queryTimerExt, textureFloatExt } from './lib/cap'
+import { SpinController } from './lib/controller'
 
 debugLogger()
 
@@ -108,14 +109,14 @@ const main = (assets: Record<string, string>) => {
 
   const scale = 0.2
   const bunnyProps = [
-    new Model({ albedo: [0.55, 0.55, 0.6], metallic: 0.25, roughness: 0.82, ao: 0.05 }, [0, 0, 0], scale, 45),
-    new Model({ albedo: [0.69, 0.27, 0.2], metallic: 0.2, roughness: 0.75, ao: 0.05 }, [4, 0, 4], scale, -45),
-    new Model({ albedo: [0.0, 0.5, 0.0], metallic: 0.0, roughness: 0.025, ao: 0.05 }, [-4, 0, 4], scale, 90),
-    new Model({ albedo: [0.0, 0.5, 0.9], metallic: 5, roughness: 0.025, ao: 0.05 }, [-2, 0, 4], scale, 35),
-    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025, ao: 0.05 }, [-6, 0, -6], scale, 70),
-    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025, ao: 0.05 }, [4, 0, -6], scale, 35),
-    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025, ao: 0.05 }, [6, 0, -5], scale, -43),
-    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025, ao: 0.05 }, [1, 0, -4], scale, -70),
+    new Model({ albedo: [0.55, 0.55, 0.6], metallic: 0.25, roughness: 0.82, ao: 0.05 }, [0, 0, 0], scale, 45, [0, 1, 0], new SpinController()),
+    new Model({ albedo: [0.69, 0.27, 0.2], metallic: 0.2, roughness: 0.75, ao: 0.05 }, [4, 0, 4], scale, -45, [0, 1, 0], new SpinController()),
+    new Model({ albedo: [0.0, 0.5, 0.0], metallic: 0.0, roughness: 0.025, ao: 0.05 }, [-4, 0, 4], scale, 90, [0, 1, 0], new SpinController()),
+    new Model({ albedo: [0.0, 0.5, 0.9], metallic: 5, roughness: 0.025, ao: 0.05 }, [-2, 0, 4], scale, 35, [0, 1, 0], new SpinController()),
+    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025, ao: 0.05 }, [-6, 0, -6], scale, 70, [0, 1, 0], new SpinController()),
+    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025, ao: 0.05 }, [4, 0, -6], scale, 35, [0, 1, 0], new SpinController()),
+    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025, ao: 0.05 }, [6, 0, -5], scale, -43, [0, 1, 0], new SpinController()),
+    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025, ao: 0.05 }, [1, 0, -4], scale, -70, [0, 1, 0], new SpinController()),
   ]
 
   const bunnyDraw = regl<ModelUniforms, MeshAttributes>({
@@ -181,6 +182,10 @@ const main = (assets: Record<string, string>) => {
   regl.frame(({ tick }) => {
     const deltaTime = 0.01666666
     statsWidget.update(deltaTime)
+
+    bunnyProps.forEach((m) => {
+      m.update()
+    })
 
     for (let i = 0; i < 4; i++) {
       if (!lights.get(i).on) {

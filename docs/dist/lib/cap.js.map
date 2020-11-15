@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["/Users/stojg/Sites/canola/src/lib/cap.ts"],
+  "sourcesContent": ["import REGL from 'regl'\n\nconst supportedExtensions: string[] = []\nexport function hasExtension(check: string): string {\n  if (supportedExtensions.length == 0) {\n    const initialRegl = REGL({})\n    const a = initialRegl._gl.getSupportedExtensions()\n    initialRegl.destroy()\n    if (a) {\n      a.forEach((val) => {\n        supportedExtensions.push(val.toUpperCase())\n      })\n    }\n  }\n  return supportedExtensions.includes(check.toUpperCase()) ? check : ''\n}\n\nexport const isAppleDevice = () => /(iPad|iPhone|iPod)/g.test(navigator.userAgent)\nexport const queryTimerExt = () => hasExtension('EXT_disjoint_timer_query')\nexport const halfFloatTextureExt = () => hasExtension('OES_texture_half_float')\nexport const textureFloatExt = () => {\n  return isAppleDevice() ? '' : hasExtension('OES_texture_float')\n}\n"],
+  "mappings": "AAAA;AAEA,MAAM,sBAAgC;AAC/B;AACL,MAAI,oBAAoB,UAAU;AAChC,wBAAoB,KAAK;AACzB,cAAU,YAAY,IAAI;AAC1B,gBAAY;AACZ,QAAI;AACF,QAAE,QAAQ;AACR,4BAAoB,KAAK,IAAI;AAAA;AAAA;AAAA;AAInC,SAAO,oBAAoB,SAAS,MAAM,iBAAiB,QAAQ;AAAA;AAG9D,6BAAsB,MAAM,sBAAsB,KAAK,UAAU;AACjE,6BAAsB,MAAM,aAAa;AACzC,mCAA4B,MAAM,aAAa;AAC/C,+BAAwB;AAC7B,SAAO,kBAAkB,KAAK,aAAa;AAAA;",
+  "names": []
+}

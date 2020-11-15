@@ -1,8 +1,9 @@
+import {textureFloatExt} from "./cap.js";
 const CUBE_MAP_SIZE = 512;
 const shadowConfig = {
   radius: CUBE_MAP_SIZE,
   colorFormat: "rgba",
-  colorType: "float",
+  colorType: textureFloatExt() ? "float" : "half float",
   stencil: false
 };
 export class Lights {

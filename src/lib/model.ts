@@ -1,6 +1,8 @@
 import { glMatrix, mat4, vec3 } from 'gl-matrix'
 import type { Material } from './material'
 import type REGL from 'regl'
+import type { Controller } from './controller'
+import { NullController } from './controller'
 
 export interface ModelUniforms {
   model: mat4
@@ -11,16 +13,28 @@ export interface ModelUniforms {
 }
 
 export class Model {
-  private readonly _model: mat4
+  private _model: mat4
   private material: Material
+  private controller: Controller | null
 
-  constructor(mtrl: Material, pos: vec3, scale: number, deg: number = 0, rotAxis: vec3 = [0, 1, 0]) {
+  constructor(mtrl: Material, pos: vec3, scale: number, deg: number = 0, rotAxis: vec3 = [0, 1, 0], ctrl: Controller = new NullController()) {
     this.material = mtrl
     this._model = Model.createModel(pos, scale, deg, rotAxis)
+    this.controller = ctrl
+  }
+
+  update() {
+    if (this.controller != null) {
+      this.controller.update(this)
+    }
   }
 
   get model(): mat4 {
     return this._model
+  }
+
+  set model(value: mat4) {
+    this._model = value
   }
 
   get albedo() {

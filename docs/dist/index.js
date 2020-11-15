@@ -10,7 +10,9 @@ import {cube as cube2} from "./models/cube.js";
 import createStatsWidget from "../web/regl-stats-widget.js";
 import {Model} from "./lib/model.js";
 import {Lights} from "./lib/lights.js";
-const xyz = (t) => vec3.fromValues(t[0], t[1], t[2]);
+import {debugLogger} from "./lib/shame.js";
+import {halfFloatTextureExt, queryTimerExt, textureFloatExt} from "./lib/cap.js";
+debugLogger();
 const loading = {
   manifest: {
     "main.fsh": {type: "text", src: "shaders/main.fsh"},
@@ -21,29 +23,24 @@ const loading = {
     "light_cube.fsh": {type: "text", src: "shaders/light_cube.fsh"}
   },
   onProgress: (progress, message) => {
-    console.log(progress, message);
   },
   onError: (err) => {
+    console.debug(err);
     console.error(err);
   },
   onDone: (assets) => {
     main(assets);
   }
 };
-resl2(loading);
 const main = (assets) => {
-  const regl2 = REGL({
-    extensions: ["oes_texture_float", "ext_disjoint_timer_query"],
-    profile: true,
-    attributes: {antialias: true}
-  });
+  const regl2 = init();
   const controls2 = new FPSControls(regl2._gl.canvas);
   const camera2 = createCamera(regl2, controls2, {position: [0, 3, 10]});
   const lights2 = new Lights();
   lights2.add(true, [10, 10, 10], [-3, 3, -3, 1]);
   lights2.add(true, [10, 0, 0], [3, 3, 3, 1]);
-  lights2.add(true, [0, 10, 0], [-3, 3, 3, 1]);
-  lights2.add(true, [0, 0, 10], [3, 3, -3, 1]);
+  lights2.add(false, [0, 10, 0], [-3, 3, 3, 1]);
+  lights2.add(false, [0, 0, 10], [3, 3, -3, 1]);
   const lightProps = [];
   lights2.all().forEach((light, i) => {
     if (!light.on)
@@ -139,15 +136,19 @@ const main = (assets) => {
     vert: assets["main.vsh"],
     cull: {enable: true, face: "back"}
   });
-  const statsWidget = createStatsWidget([
-    [drawDepth[0], "drawDepth0"],
-    [drawDepth[1], "drawDepth1"],
-    [drawDepth[2], "drawDepth2"],
-    [drawDepth[3], "drawDepth3"],
-    [planeDraw, "plane"],
-    [bunnyDraw, "bunnies"],
-    [lightBulbDraw, "lights"]
-  ]);
+  let statsWidget = {update: (dt) => {
+  }};
+  if (queryTimerExt()) {
+    statsWidget = createStatsWidget([
+      [drawDepth[0], "drawDepth0"],
+      [drawDepth[1], "drawDepth1"],
+      [drawDepth[2], "drawDepth2"],
+      [drawDepth[3], "drawDepth3"],
+      [planeDraw, "plane"],
+      [bunnyDraw, "bunnies"],
+      [lightBulbDraw, "lights"]
+    ]);
+  }
   regl2.frame(({tick}) => {
     const deltaTime = 0.01666666;
     statsWidget.update(deltaTime);
@@ -177,4 +178,23 @@ const main = (assets) => {
     });
   });
 };
+const xyz = (t) => vec3.fromValues(t[0], t[1], t[2]);
+const init = function() {
+  const requestExtensions = [];
+  if (queryTimerExt()) {
+    requestExtensions.push("EXT_disjoint_timer_query");
+  }
+  if (halfFloatTextureExt()) {
+    requestExtensions.push(halfFloatTextureExt());
+  }
+  if (textureFloatExt()) {
+    requestExtensions.push(textureFloatExt());
+  }
+  return REGL({
+    extensions: requestExtensions,
+    profile: true,
+    attributes: {antialias: true}
+  });
+};
+resl2(loading);
 //# sourceMappingURL=index.js.map
