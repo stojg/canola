@@ -48,8 +48,8 @@ const main = (assets: Record<string, string>) => {
   const camera = createCamera(regl, controls, { position: [0, 3, 10] })
 
   const lights = new Lights()
-  lights.add(true, [10, 10, 10], [-3, 3, -3, 1])
-  lights.add(true, [10, 0, 0], [3, 3, 3, 1])
+  lights.add(true, [20, 20, 20], [-3, 3, -3, 1])
+  lights.add(true, [20, 0, 0], [3, 3, 3, 1])
   lights.add(false, [0, 10, 0], [-3, 3, 3, 1])
   lights.add(false, [0, 0, 10], [3, 3, -3, 1])
 
@@ -107,16 +107,103 @@ const main = (assets: Record<string, string>) => {
     },
   })
 
+  const ctrl = new SpinController()
+
+  const up: vec3 = [0, 1, 0]
   const scale = 0.2
   const bunnyProps = [
-    new Model({ albedo: [0.55, 0.55, 0.6], metallic: 0.25, roughness: 0.82, ao: 0.05 }, [0, 0, 0], scale, 45, [0, 1, 0], new SpinController()),
-    new Model({ albedo: [0.69, 0.27, 0.2], metallic: 0.2, roughness: 0.75, ao: 0.05 }, [4, 0, 4], scale, -45, [0, 1, 0], new SpinController()),
-    new Model({ albedo: [0.0, 0.5, 0.0], metallic: 0.0, roughness: 0.025, ao: 0.05 }, [-4, 0, 4], scale, 90, [0, 1, 0], new SpinController()),
-    new Model({ albedo: [0.0, 0.5, 0.9], metallic: 5, roughness: 0.025, ao: 0.05 }, [-2, 0, 4], scale, 35, [0, 1, 0], new SpinController()),
-    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025, ao: 0.05 }, [-6, 0, -6], scale, 70, [0, 1, 0], new SpinController()),
-    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025, ao: 0.05 }, [4, 0, -6], scale, 35, [0, 1, 0], new SpinController()),
-    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025, ao: 0.05 }, [6, 0, -5], scale, -43, [0, 1, 0], new SpinController()),
-    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025, ao: 0.05 }, [1, 0, -4], scale, -70, [0, 1, 0], new SpinController()),
+    new Model({ albedo: [0.55, 0.55, 0.6], metallic: 0.25, roughness: 0.82, ao: 0.05 }, [0, 0, 0], scale, 45, up, ctrl),
+    new Model(
+      {
+        albedo: [0.69, 0.27, 0.2],
+        metallic: 0.2,
+        roughness: 0.75,
+        ao: 0.05,
+      },
+      [4, 0, 4],
+      scale,
+      -45,
+      up,
+      ctrl,
+    ),
+    new Model(
+      {
+        albedo: [0.0, 0.5, 0.0],
+        metallic: 0.0,
+        roughness: 0.025,
+        ao: 0.05,
+      },
+      [-4, 0, 4],
+      scale,
+      90,
+      up,
+      ctrl,
+    ),
+    new Model(
+      {
+        albedo: [0.0, 0.5, 0.9],
+        metallic: 5,
+        roughness: 0.025,
+        ao: 0.05,
+      },
+      [-2, 0, 4],
+      scale,
+      35,
+      up,
+      ctrl,
+    ),
+    new Model(
+      {
+        albedo: [0.5, 0.5, 0.5],
+        metallic: 5,
+        roughness: 0.025,
+        ao: 0.05,
+      },
+      [-6, 0, -6],
+      scale,
+      70,
+      up,
+      ctrl,
+    ),
+    new Model(
+      {
+        albedo: [0.5, 0.5, 0.5],
+        metallic: 5,
+        roughness: 0.025,
+        ao: 0.05,
+      },
+      [4, 0, -6],
+      scale,
+      35,
+      up,
+      ctrl,
+    ),
+    new Model(
+      {
+        albedo: [0.5, 0.5, 0.5],
+        metallic: 5,
+        roughness: 0.025,
+        ao: 0.05,
+      },
+      [6, 0, -5],
+      scale,
+      -43,
+      up,
+      ctrl,
+    ),
+    new Model(
+      {
+        albedo: [0.5, 0.5, 0.5],
+        metallic: 5,
+        roughness: 0.025,
+        ao: 0.05,
+      },
+      [1, 0, -4],
+      scale,
+      -70,
+      up,
+      ctrl,
+    ),
   ]
 
   const bunnyDraw = regl<ModelUniforms, MeshAttributes>({
@@ -154,19 +241,15 @@ const main = (assets: Record<string, string>) => {
 
   const allLightScope = regl(lights.allUniforms(regl))
 
-  const plainDraw = regl({
-    frag: assets['main.fsh'],
-    vert: assets['main.vsh'],
-    cull: { enable: true, face: 'back' },
-  })
-
   const emissiveDraw = regl({
     frag: assets['emissive.fsh'],
     vert: assets['main.vsh'],
     cull: { enable: true, face: 'back' },
   })
 
-  let statsWidget = { update: (dt: number) => {} }
+  let statsWidget = {
+    update: (dt: number) => {},
+  }
   if (queryTimerExt()) {
     statsWidget = createStatsWidget([
       [drawDepth[0], 'drawDepth0'],
@@ -179,7 +262,7 @@ const main = (assets: Record<string, string>) => {
     ])
   }
 
-  regl.frame(({ tick }) => {
+  regl.frame(({ tick, viewportWidth, viewportHeight }) => {
     const deltaTime = 0.01666666
     statsWidget.update(deltaTime)
 
@@ -193,14 +276,15 @@ const main = (assets: Record<string, string>) => {
       }
       oneLightScope[i](() => {
         drawDepth[i](6, () => {
-          regl.clear({ depth: 1, color: [1, 1, 1, 1] })
+          regl.clear({ depth: 1 })
           bunnyDraw(bunnyProps)
           planeDraw(planeProps)
         })
       })
     }
 
-    regl.clear({ color: [0.05, 0.05, 0.05, 1] })
+    // pbrFramebufferCommand(() => {
+    regl.clear({ color: [0.0, 0.0, 0.0, 255], depth: 1 })
     camera(() => {
       allLightScope(() => {
         shadowDraw(() => {
@@ -213,6 +297,10 @@ const main = (assets: Record<string, string>) => {
         lightBulbDraw(lightProps)
       })
     })
+    // })
+
+    // regl.clear({ color: [0.0, 0.0, 0.0, 255] })
+    // drawToScreen()
   })
 }
 
@@ -229,8 +317,10 @@ const init = function (): REGL.Regl {
   if (textureFloatExt()) {
     requestExtensions.push(textureFloatExt())
   }
+
   return REGL({
     extensions: requestExtensions,
+    optionalExtensions: ['oes_texture_float_linear'],
     profile: true,
     attributes: { antialias: true },
   })
