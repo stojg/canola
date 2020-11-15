@@ -12,6 +12,7 @@ import {Model} from "./lib/model.js";
 import {Lights} from "./lib/lights.js";
 import {debugLogger} from "./lib/shame.js";
 import {halfFloatTextureExt, queryTimerExt, textureFloatExt} from "./lib/cap.js";
+import {SpinController} from "./lib/controller.js";
 debugLogger();
 const loading = {
   manifest: {
@@ -37,8 +38,8 @@ const main = (assets) => {
   const controls2 = new FPSControls(regl2._gl.canvas);
   const camera2 = createCamera(regl2, controls2, {position: [0, 3, 10]});
   const lights2 = new Lights();
-  lights2.add(true, [10, 10, 10], [-3, 3, -3, 1]);
-  lights2.add(true, [10, 0, 0], [3, 3, 3, 1]);
+  lights2.add(true, [20, 20, 20], [-3, 3, -3, 1]);
+  lights2.add(true, [20, 0, 0], [3, 3, 3, 1]);
   lights2.add(false, [0, 10, 0], [-3, 3, 3, 1]);
   lights2.add(false, [0, 0, 10], [3, 3, -3, 1]);
   const lightProps = [];
@@ -91,16 +92,53 @@ const main = (assets) => {
       "shadowCubes[3]": lights2.shadowFBO(regl2, 3)
     }
   });
+  const ctrl = new SpinController();
+  const up = [0, 1, 0];
   const scale = 0.2;
   const bunnyProps = [
-    new Model({albedo: [0.55, 0.55, 0.6], metallic: 0.25, roughness: 0.82, ao: 0.05}, [0, 0, 0], scale, 45),
-    new Model({albedo: [0.69, 0.27, 0.2], metallic: 0.2, roughness: 0.75, ao: 0.05}, [4, 0, 4], scale, -45),
-    new Model({albedo: [0, 0.5, 0], metallic: 0, roughness: 0.025, ao: 0.05}, [-4, 0, 4], scale, 90),
-    new Model({albedo: [0, 0.5, 0.9], metallic: 5, roughness: 0.025, ao: 0.05}, [-2, 0, 4], scale, 35),
-    new Model({albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025, ao: 0.05}, [-6, 0, -6], scale, 70),
-    new Model({albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025, ao: 0.05}, [4, 0, -6], scale, 35),
-    new Model({albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025, ao: 0.05}, [6, 0, -5], scale, -43),
-    new Model({albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025, ao: 0.05}, [1, 0, -4], scale, -70)
+    new Model({albedo: [0.55, 0.55, 0.6], metallic: 0.25, roughness: 0.82, ao: 0.05}, [0, 0, 0], scale, 45, up, ctrl),
+    new Model({
+      albedo: [0.69, 0.27, 0.2],
+      metallic: 0.2,
+      roughness: 0.75,
+      ao: 0.05
+    }, [4, 0, 4], scale, -45, up, ctrl),
+    new Model({
+      albedo: [0, 0.5, 0],
+      metallic: 0,
+      roughness: 0.025,
+      ao: 0.05
+    }, [-4, 0, 4], scale, 90, up, ctrl),
+    new Model({
+      albedo: [0, 0.5, 0.9],
+      metallic: 5,
+      roughness: 0.025,
+      ao: 0.05
+    }, [-2, 0, 4], scale, 35, up, ctrl),
+    new Model({
+      albedo: [0.5, 0.5, 0.5],
+      metallic: 5,
+      roughness: 0.025,
+      ao: 0.05
+    }, [-6, 0, -6], scale, 70, up, ctrl),
+    new Model({
+      albedo: [0.5, 0.5, 0.5],
+      metallic: 5,
+      roughness: 0.025,
+      ao: 0.05
+    }, [4, 0, -6], scale, 35, up, ctrl),
+    new Model({
+      albedo: [0.5, 0.5, 0.5],
+      metallic: 5,
+      roughness: 0.025,
+      ao: 0.05
+    }, [6, 0, -5], scale, -43, up, ctrl),
+    new Model({
+      albedo: [0.5, 0.5, 0.5],
+      metallic: 5,
+      roughness: 0.025,
+      ao: 0.05
+    }, [1, 0, -4], scale, -70, up, ctrl)
   ];
   const bunnyDraw = regl2({
     elements: bunny2.cells,
@@ -126,18 +164,15 @@ const main = (assets) => {
     uniforms: Model.uniforms(regl2)
   });
   const allLightScope = regl2(lights2.allUniforms(regl2));
-  const plainDraw = regl2({
-    frag: assets["main.fsh"],
-    vert: assets["main.vsh"],
-    cull: {enable: true, face: "back"}
-  });
   const emissiveDraw = regl2({
     frag: assets["emissive.fsh"],
     vert: assets["main.vsh"],
     cull: {enable: true, face: "back"}
   });
-  let statsWidget = {update: (dt) => {
-  }};
+  let statsWidget = {
+    update: (dt) => {
+    }
+  };
   if (queryTimerExt()) {
     statsWidget = createStatsWidget([
       [drawDepth[0], "drawDepth0"],
@@ -149,22 +184,25 @@ const main = (assets) => {
       [lightBulbDraw, "lights"]
     ]);
   }
-  regl2.frame(({tick}) => {
+  regl2.frame(({tick, viewportWidth, viewportHeight}) => {
     const deltaTime = 0.01666666;
     statsWidget.update(deltaTime);
+    bunnyProps.forEach((m) => {
+      m.update();
+    });
     for (let i = 0; i < 4; i++) {
       if (!lights2.get(i).on) {
         continue;
       }
       oneLightScope[i](() => {
         drawDepth[i](6, () => {
-          regl2.clear({depth: 1, color: [1, 1, 1, 1]});
+          regl2.clear({depth: 1});
           bunnyDraw(bunnyProps);
           planeDraw(planeProps);
         });
       });
     }
-    regl2.clear({color: [0.05, 0.05, 0.05, 1]});
+    regl2.clear({color: [0, 0, 0, 255], depth: 1});
     camera2(() => {
       allLightScope(() => {
         shadowDraw(() => {
@@ -192,6 +230,7 @@ const init = function() {
   }
   return REGL({
     extensions: requestExtensions,
+    optionalExtensions: ["oes_texture_float_linear"],
     profile: true,
     attributes: {antialias: true}
   });

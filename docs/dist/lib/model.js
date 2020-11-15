@@ -1,11 +1,21 @@
 import {glMatrix, mat4} from "../../web/gl-matrix.js";
+import {NullController} from "./controller.js";
 export class Model {
-  constructor(mtrl, pos, scale, deg = 0, rotAxis = [0, 1, 0]) {
+  constructor(mtrl, pos, scale, deg = 0, rotAxis = [0, 1, 0], ctrl = new NullController()) {
     this.material = mtrl;
     this._model = Model.createModel(pos, scale, deg, rotAxis);
+    this.controller = ctrl;
+  }
+  update() {
+    if (this.controller != null) {
+      this.controller.update(this);
+    }
   }
   get model() {
     return this._model;
+  }
+  set model(value) {
+    this._model = value;
   }
   get albedo() {
     return this.material.albedo;

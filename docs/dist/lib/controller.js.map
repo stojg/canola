@@ -1,0 +1,7 @@
+{
+  "version": 3,
+  "sources": ["/Users/stojg/Sites/canola/src/lib/controller.ts"],
+  "sourcesContent": ["import type { Model } from './model'\nimport { glMatrix, mat4, quat } from 'gl-matrix'\n\nexport interface Controller {\n  update(m: Model): void\n}\n\nexport class NullController implements Controller {\n  update(m: Model) {}\n}\n\nexport class SpinController implements Controller {\n  update(m: Model) {\n    const transform: mat4 = mat4.clone(m.model)\n\n    // Pitch Locally, Yaw Globally\n    mat4.rotateY(transform, transform, glMatrix.toRadian(1))\n\n    m.model = transform\n  }\n}\n"],
+  "mappings": "AACA;AADA;AAAA,EAQE,OAAO;AAAA;AAAA;AART;AAAA,EAYE;AACE,sBAAwB,KAAK,MAAM,EAAE;AAGrC,SAAK,QAAQ,WAAW,WAAW,SAAS,SAAS;AAErD,MAAE,QAAQ;AAAA;AAAA;",
+  "names": []
+}

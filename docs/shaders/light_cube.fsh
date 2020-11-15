@@ -1,4 +1,4 @@
-precision mediump float;
+precision lowp float;
 
 // lights
 struct Light {
