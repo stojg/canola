@@ -28,6 +28,9 @@ const cubePosition: vec3[] = [
   [-0.5, -0.5, +0.5], // bottom face
 ]
 
+// @ts-ignore
+const cubePositionA: number[] = cubePosition.flatMap((v : vec3) => v)
+
 const cubeUv: vec2[] = [
   [0.0, 0.0],
   [1.0, 0.0],
@@ -72,9 +75,14 @@ const cubeElements: vec3[] = [
 
 const cubeNormals: vec3[] = normals(cubeElements, cubePosition)
 
+// @ts-ignore
+const cubeNormalsA: number[] = cubeNormals.flatMap((v : vec3) => v)
+
 export const cube = {
   positions: cubePosition,
+  positionsA: cubePositionA,
   normals: cubeNormals,
+  normalsA: cubeNormalsA,
   uvs: cubeUv,
   indices: cubeElements,
 }

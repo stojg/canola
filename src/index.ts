@@ -25,6 +25,7 @@ const loading = {
     'pbr.fsh': { type: 'text', src: 'shaders/pbr.fsh' },
     'pbr_shadow.fsh': { type: 'text', src: 'shaders/pbr_shadow.fsh' },
     'light_cube.fsh': { type: 'text', src: 'shaders/light_cube.fsh' },
+    'light_cube.vsh': { type: 'text', src: 'shaders/light_cube.vsh' },
   },
   onProgress: (progress: number, message: any) => {},
   onError: (err: Error) => {
@@ -48,8 +49,8 @@ const main = (assets: Record<string, string>) => {
   const camera = createCamera(regl, controls, { position: [0, 3, 10] })
 
   const lights = new Lights()
-  lights.add(true, [20, 20, 20], [-3, 3, -3, 1])
-  lights.add(true, [20, 0, 0], [3, 3, 3, 1])
+  lights.add(true, [20, 20, 10], [-3, 3, -3, 1])
+  lights.add(false, [20, 0, 0], [3, 3, 3, 1])
   lights.add(false, [0, 10, 0], [-3, 3, 3, 1])
   lights.add(false, [0, 0, 10], [3, 3, -3, 1])
 
@@ -62,26 +63,26 @@ const main = (assets: Record<string, string>) => {
 
   function lightCubeDraw(lightId: number): REGL.DrawConfig {
     const shadowFbo = lights.shadowFBO(regl, lightId)
+    const proj = mat4.perspective(mat4.create(), glMatrix.toRadian(90), 1, 0.1, 15.0)
     return {
       frag: assets['light_cube.fsh'],
-      vert: assets['main.vsh'],
+      vert: assets['light_cube.vsh'],
       cull: { enable: true, face: 'back' },
       uniforms: {
-        projection: mat4.perspective(mat4.create(), glMatrix.toRadian(90), 1, 0.25, 30.0),
-        view: function (context: REGL.DefaultContext, props: any, batchId: number) {
+        projectionView: (context: REGL.DefaultContext, props: any, batchId: number) => {
           switch (batchId) {
             case 0: // +x right
-              return mat4.lookAt(mat4.create(), xyz(lights.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(1, 0, 0), xyz(lights.get(lightId).pos)), [0, -1, 0])
+              return mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(lights.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(1, 0, 0), xyz(lights.get(lightId).pos)), [0, -1, 0]))
             case 1: // -x left
-              return mat4.lookAt(mat4.create(), xyz(lights.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(-1, 0, 0), xyz(lights.get(lightId).pos)), [0, -1, 0])
+              return mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(lights.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(-1, 0, 0), xyz(lights.get(lightId).pos)), [0, -1, 0]))
             case 2: // +y top
-              return mat4.lookAt(mat4.create(), xyz(lights.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, 1, 0), xyz(lights.get(lightId).pos)), [0, 0, 1])
+              return mat4.mul(mat4.create(), proj,  mat4.lookAt(mat4.create(), xyz(lights.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, 1, 0), xyz(lights.get(lightId).pos)), [0, 0, 1]))
             case 3: // -y bottom
-              return mat4.lookAt(mat4.create(), xyz(lights.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, -1, 0), xyz(lights.get(lightId).pos)), [0, 0, -1])
+              return mat4.mul(mat4.create(), proj,  mat4.lookAt(mat4.create(), xyz(lights.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, -1, 0), xyz(lights.get(lightId).pos)), [0, 0, -1]))
             case 4: // +z near
-              return mat4.lookAt(mat4.create(), xyz(lights.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, 0, 1), xyz(lights.get(lightId).pos)), [0, -1, 0])
+              return mat4.mul(mat4.create(), proj,  mat4.lookAt(mat4.create(), xyz(lights.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, 0, 1), xyz(lights.get(lightId).pos)), [0, -1, 0]))
             case 5: // -z far
-              return mat4.lookAt(mat4.create(), xyz(lights.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, 0, -1), xyz(lights.get(lightId).pos)), [0, -1, 0])
+              return mat4.mul(mat4.create(), proj,  mat4.lookAt(mat4.create(), xyz(lights.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, 0, -1), xyz(lights.get(lightId).pos)), [0, -1, 0]))
           }
         },
       },
@@ -283,7 +284,6 @@ const main = (assets: Record<string, string>) => {
       })
     }
 
-    // pbrFramebufferCommand(() => {
     regl.clear({ color: [0.0, 0.0, 0.0, 255], depth: 1 })
     camera(() => {
       allLightScope(() => {
@@ -292,15 +292,10 @@ const main = (assets: Record<string, string>) => {
           planeDraw(planeProps)
         })
       })
-      //
       emissiveDraw(() => {
         lightBulbDraw(lightProps)
       })
     })
-    // })
-
-    // regl.clear({ color: [0.0, 0.0, 0.0, 255] })
-    // drawToScreen()
   })
 }
 
@@ -317,6 +312,8 @@ const init = function (): REGL.Regl {
   if (textureFloatExt()) {
     requestExtensions.push(textureFloatExt())
   }
+
+  requestExtensions.push('oes_vertex_array_object')
 
   return REGL({
     extensions: requestExtensions,

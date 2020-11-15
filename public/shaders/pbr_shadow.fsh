@@ -55,8 +55,8 @@ void main()
         vec3 direction = lights[i].position.xyz - WorldPos;
         float distance = length(direction);
         const float bias = 0.1;
-        vec4 env = getSampleFromArray(shadowCubes, i, direction * -1.0 * vec3(0.1));
-        if((env.r + bias) < (distance)) {
+        float env = getSampleFromArray(shadowCubes, i, direction * -1.0 * vec3(0.1)).r;
+        if((env + bias) < (distance)) {
             continue;
         }
 

@@ -2,9 +2,7 @@ precision lowp float;
 
 // lights
 struct Light {
-    vec3 color;
     vec4 position;
-    bool on;
 };
 
 uniform Light light;
