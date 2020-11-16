@@ -7,7 +7,7 @@ import normals from "../web/angle-normals.js";
 import {glMatrix, mat4, vec3} from "../web/gl-matrix.js";
 import {FPSControls} from "./lib/controls.js";
 import {cube as cube2} from "./models/cube.js";
-import createStatsWidget from "../web/regl-stats-widget.js";
+import {createStatsWidget} from "./ui/stats-widget.js";
 import {Model} from "./lib/model.js";
 import {Lights} from "./lib/lights.js";
 import {debugLogger} from "./lib/shame.js";
@@ -21,7 +21,8 @@ const loading = {
     "emissive.fsh": {type: "text", src: "shaders/emissive.fsh"},
     "pbr.fsh": {type: "text", src: "shaders/pbr.fsh"},
     "pbr_shadow.fsh": {type: "text", src: "shaders/pbr_shadow.fsh"},
-    "light_cube.fsh": {type: "text", src: "shaders/light_cube.fsh"}
+    "light_cube.fsh": {type: "text", src: "shaders/light_cube.fsh"},
+    "light_cube.vsh": {type: "text", src: "shaders/light_cube.vsh"}
   },
   onProgress: (progress, message) => {
   },
@@ -38,7 +39,7 @@ const main = (assets) => {
   const controls2 = new FPSControls(regl2._gl.canvas);
   const camera2 = createCamera(regl2, controls2, {position: [0, 3, 10]});
   const lights2 = new Lights();
-  lights2.add(true, [20, 20, 20], [-3, 3, -3, 1]);
+  lights2.add(true, [20, 20, 10], [-3, 3, -3, 1]);
   lights2.add(true, [20, 0, 0], [3, 3, 3, 1]);
   lights2.add(false, [0, 10, 0], [-3, 3, 3, 1]);
   lights2.add(false, [0, 0, 10], [3, 3, -3, 1]);
@@ -51,26 +52,26 @@ const main = (assets) => {
   });
   function lightCubeDraw(lightId) {
     const shadowFbo = lights2.shadowFBO(regl2, lightId);
+    const proj = mat4.perspective(mat4.create(), glMatrix.toRadian(90), 1, 0.1, 15);
     return {
       frag: assets["light_cube.fsh"],
-      vert: assets["main.vsh"],
+      vert: assets["light_cube.vsh"],
       cull: {enable: true, face: "back"},
       uniforms: {
-        projection: mat4.perspective(mat4.create(), glMatrix.toRadian(90), 1, 0.25, 30),
-        view: function(context, props, batchId) {
+        projectionView: (context, props, batchId) => {
           switch (batchId) {
             case 0:
-              return mat4.lookAt(mat4.create(), xyz(lights2.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(1, 0, 0), xyz(lights2.get(lightId).pos)), [0, -1, 0]);
+              return mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(lights2.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(1, 0, 0), xyz(lights2.get(lightId).pos)), [0, -1, 0]));
             case 1:
-              return mat4.lookAt(mat4.create(), xyz(lights2.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(-1, 0, 0), xyz(lights2.get(lightId).pos)), [0, -1, 0]);
+              return mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(lights2.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(-1, 0, 0), xyz(lights2.get(lightId).pos)), [0, -1, 0]));
             case 2:
-              return mat4.lookAt(mat4.create(), xyz(lights2.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, 1, 0), xyz(lights2.get(lightId).pos)), [0, 0, 1]);
+              return mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(lights2.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, 1, 0), xyz(lights2.get(lightId).pos)), [0, 0, 1]));
             case 3:
-              return mat4.lookAt(mat4.create(), xyz(lights2.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, -1, 0), xyz(lights2.get(lightId).pos)), [0, 0, -1]);
+              return mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(lights2.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, -1, 0), xyz(lights2.get(lightId).pos)), [0, 0, -1]));
             case 4:
-              return mat4.lookAt(mat4.create(), xyz(lights2.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, 0, 1), xyz(lights2.get(lightId).pos)), [0, -1, 0]);
+              return mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(lights2.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, 0, 1), xyz(lights2.get(lightId).pos)), [0, -1, 0]));
             case 5:
-              return mat4.lookAt(mat4.create(), xyz(lights2.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, 0, -1), xyz(lights2.get(lightId).pos)), [0, -1, 0]);
+              return mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(lights2.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, 0, -1), xyz(lights2.get(lightId).pos)), [0, -1, 0]));
           }
         }
       },
@@ -169,28 +170,24 @@ const main = (assets) => {
     vert: assets["main.vsh"],
     cull: {enable: true, face: "back"}
   });
-  let statsWidget = {
-    update: (dt) => {
+  const drawCalls = [];
+  lights2.lights.forEach((l, i) => {
+    if (l.on) {
+      drawCalls.push([drawDepth[i], `lightmap${i}`]);
     }
-  };
-  if (queryTimerExt()) {
-    statsWidget = createStatsWidget([
-      [drawDepth[0], "drawDepth0"],
-      [drawDepth[1], "drawDepth1"],
-      [drawDepth[2], "drawDepth2"],
-      [drawDepth[3], "drawDepth3"],
-      [planeDraw, "plane"],
-      [bunnyDraw, "bunnies"],
-      [lightBulbDraw, "lights"]
-    ]);
-  }
-  regl2.frame(({tick, viewportWidth, viewportHeight}) => {
-    const deltaTime = 0.01666666;
+  });
+  drawCalls.push([shadowDraw, "shadowed"]);
+  drawCalls.push([emissiveDraw, "emissive"]);
+  const statsWidget = createStatsWidget(drawCalls, regl2);
+  let prevTime = 0;
+  regl2.frame(({tick, time, viewportHeight}) => {
+    const deltaTime = time - prevTime;
+    prevTime = time;
     statsWidget.update(deltaTime);
     bunnyProps.forEach((m) => {
       m.update();
     });
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < lights2.all().length; i++) {
       if (!lights2.get(i).on) {
         continue;
       }
@@ -228,6 +225,7 @@ const init = function() {
   if (textureFloatExt()) {
     requestExtensions.push(textureFloatExt());
   }
+  requestExtensions.push("oes_vertex_array_object");
   return REGL({
     extensions: requestExtensions,
     optionalExtensions: ["oes_texture_float_linear"],

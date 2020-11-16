@@ -1,4 +1,4 @@
-precision highp float;
+precision lowp float;
 
 // material parameters
 uniform vec3 albedo;

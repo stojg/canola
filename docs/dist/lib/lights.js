@@ -1,11 +1,4 @@
-import {textureFloatExt} from "./cap.js";
 const CUBE_MAP_SIZE = 512;
-const shadowConfig = {
-  radius: CUBE_MAP_SIZE,
-  colorFormat: "rgba",
-  colorType: textureFloatExt() ? "float" : "half float",
-  stencil: false
-};
 export class Lights {
   constructor() {
     this.lights = [];
@@ -20,7 +13,10 @@ export class Lights {
   }
   shadowFBO(regl, id) {
     if (!(id in this.shadowFBOs)) {
-      this.shadowFBOs[id] = regl.framebufferCube(shadowConfig);
+      this.shadowFBOs[id] = regl.framebufferCube({
+        radius: CUBE_MAP_SIZE,
+        colorType: "half float"
+      });
     }
     return this.shadowFBOs[id];
   }

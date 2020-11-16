@@ -25,6 +25,7 @@ const cubePosition = [
   [0.5, -0.5, 0.5],
   [-0.5, -0.5, 0.5]
 ];
+const cubePositionA = cubePosition.flatMap((v) => v);
 const cubeUv = [
   [0, 0],
   [1, 0],
@@ -66,9 +67,12 @@ const cubeElements = [
   [23, 20, 22]
 ];
 const cubeNormals = normals(cubeElements, cubePosition);
+const cubeNormalsA = cubeNormals.flatMap((v) => v);
 export const cube = {
   positions: cubePosition,
+  positionsA: cubePositionA,
   normals: cubeNormals,
+  normalsA: cubeNormalsA,
   uvs: cubeUv,
   indices: cubeElements
 };

@@ -5,7 +5,6 @@
     "gl-matrix": "./gl-matrix.js",
     "mouse-change": "./mouse-change.js",
     "regl": "./regl.js",
-    "regl-stats-widget": "./regl-stats-widget.js",
     "resl": "./resl.js"
   }
 }
