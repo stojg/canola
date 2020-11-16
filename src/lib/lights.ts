@@ -9,11 +9,6 @@ interface Light {
 
 const CUBE_MAP_SIZE = 512
 
-const shadowConfig: REGL.FramebufferCubeOptions = {
-  radius: CUBE_MAP_SIZE,
-  colorType: 'half float',
-}
-
 export class Lights {
   lights: Light[] = []
   shadowFBOs: REGL.FramebufferCube[] = []
@@ -31,7 +26,10 @@ export class Lights {
 
   shadowFBO(regl: REGL.Regl, id: number): REGL.FramebufferCube {
     if (!(id in this.shadowFBOs)) {
-      this.shadowFBOs[id] = regl.framebufferCube(shadowConfig)
+      this.shadowFBOs[id] = regl.framebufferCube({
+        radius: CUBE_MAP_SIZE,
+        colorType: 'half float',
+      })
     }
     return this.shadowFBOs[id]
   }

@@ -21,7 +21,6 @@
     "mouse-pressed": "^1.0.0",
     "mouse-wheel": "^1.2.0",
     "regl": "^2.0.1",
-    "regl-stats-widget": "0.0.1",
     "resl": "^1.0.3",
     "ts-key-enum": "^3.0.4"
   },

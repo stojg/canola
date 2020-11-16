@@ -9,7 +9,6 @@ declare module 'gl-mat4/lookAt'
 declare module 'gl-quat/identity'
 declare module 'bunny'
 declare module 'angle-normals'
-declare module 'regl-stats-widget'
 declare module 'resl'
 
 /* CSS MODULES */

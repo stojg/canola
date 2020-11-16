@@ -1233,11 +1233,6 @@ readdirp@~3.5.0:
   dependencies:
     picomatch "^2.2.1"
 
-regl-stats-widget@0.0.1:
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/regl-stats-widget/-/regl-stats-widget-0.0.1.tgz#acce28c08e89bd18a21abd21ddaf0997d98b4205"
-  integrity sha1-rM4owI6JvRiiGr0h3a8Jl9mLQgU=
-
 regl@^2.0.1:
   version "2.0.1"
   resolved "https://registry.yarnpkg.com/regl/-/regl-2.0.1.tgz#925038c050de08764377fe1d2d5f9e65e0b45a52"

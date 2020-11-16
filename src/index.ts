@@ -7,7 +7,7 @@ import normals from 'angle-normals'
 import { glMatrix, mat4, vec3, vec4 } from 'gl-matrix'
 import { FPSControls } from './lib/controls'
 import { cube } from './models/cube'
-import createStatsWidget from 'regl-stats-widget'
+import { createStatsWidget } from './ui/stats-widget'
 import { Model, ModelUniforms } from './lib/model'
 import { Lights } from './lib/lights'
 import { debugLogger } from './lib/shame'
@@ -50,7 +50,7 @@ const main = (assets: Record<string, string>) => {
 
   const lights = new Lights()
   lights.add(true, [20, 20, 10], [-3, 3, -3, 1])
-  lights.add(false, [20, 0, 0], [3, 3, 3, 1])
+  lights.add(true, [20, 0, 0], [3, 3, 3, 1])
   lights.add(false, [0, 10, 0], [-3, 3, 3, 1])
   lights.add(false, [0, 0, 10], [3, 3, -3, 1])
 
@@ -76,13 +76,13 @@ const main = (assets: Record<string, string>) => {
             case 1: // -x left
               return mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(lights.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(-1, 0, 0), xyz(lights.get(lightId).pos)), [0, -1, 0]))
             case 2: // +y top
-              return mat4.mul(mat4.create(), proj,  mat4.lookAt(mat4.create(), xyz(lights.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, 1, 0), xyz(lights.get(lightId).pos)), [0, 0, 1]))
+              return mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(lights.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, 1, 0), xyz(lights.get(lightId).pos)), [0, 0, 1]))
             case 3: // -y bottom
-              return mat4.mul(mat4.create(), proj,  mat4.lookAt(mat4.create(), xyz(lights.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, -1, 0), xyz(lights.get(lightId).pos)), [0, 0, -1]))
+              return mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(lights.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, -1, 0), xyz(lights.get(lightId).pos)), [0, 0, -1]))
             case 4: // +z near
-              return mat4.mul(mat4.create(), proj,  mat4.lookAt(mat4.create(), xyz(lights.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, 0, 1), xyz(lights.get(lightId).pos)), [0, -1, 0]))
+              return mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(lights.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, 0, 1), xyz(lights.get(lightId).pos)), [0, -1, 0]))
             case 5: // -z far
-              return mat4.mul(mat4.create(), proj,  mat4.lookAt(mat4.create(), xyz(lights.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, 0, -1), xyz(lights.get(lightId).pos)), [0, -1, 0]))
+              return mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(lights.get(lightId).pos), vec3.add(vec3.create(), vec3.fromValues(0, 0, -1), xyz(lights.get(lightId).pos)), [0, -1, 0]))
           }
         },
       },
@@ -109,7 +109,6 @@ const main = (assets: Record<string, string>) => {
   })
 
   const ctrl = new SpinController()
-
   const up: vec3 = [0, 1, 0]
   const scale = 0.2
   const bunnyProps = [
@@ -248,30 +247,27 @@ const main = (assets: Record<string, string>) => {
     cull: { enable: true, face: 'back' },
   })
 
-  let statsWidget = {
-    update: (dt: number) => {},
-  }
-  if (queryTimerExt()) {
-    statsWidget = createStatsWidget([
-      [drawDepth[0], 'drawDepth0'],
-      [drawDepth[1], 'drawDepth1'],
-      [drawDepth[2], 'drawDepth2'],
-      [drawDepth[3], 'drawDepth3'],
-      [planeDraw, 'plane'],
-      [bunnyDraw, 'bunnies'],
-      [lightBulbDraw, 'lights'],
-    ])
-  }
+  const drawCalls: [REGL.DrawCommand, string][] = []
+  lights.lights.forEach((l, i) => {
+    if (l.on) {
+      drawCalls.push([drawDepth[i], `lightmap${i}`])
+    }
+  })
+  drawCalls.push([shadowDraw, 'shadowed'])
+  drawCalls.push([emissiveDraw, 'emissive'])
+  const statsWidget = createStatsWidget(drawCalls, regl)
 
-  regl.frame(({ tick, viewportWidth, viewportHeight }) => {
-    const deltaTime = 0.01666666
+  let prevTime = 0.0
+  regl.frame(({ tick, time, viewportHeight }) => {
+    const deltaTime = time - prevTime
+    prevTime = time
     statsWidget.update(deltaTime)
 
     bunnyProps.forEach((m) => {
       m.update()
     })
 
-    for (let i = 0; i < 4; i++) {
+    for (let i = 0; i < lights.all().length; i++) {
       if (!lights.get(i).on) {
         continue
       }
