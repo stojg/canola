@@ -24,6 +24,7 @@ const loading = {
     'emissive.fsh': { type: 'text', src: 'shaders/emissive.fsh' },
     'pbr.fsh': { type: 'text', src: 'shaders/pbr.fsh' },
     'pbr_shadow.fsh': { type: 'text', src: 'shaders/pbr_shadow.fsh' },
+    'pbr_shadow.vsh': { type: 'text', src: 'shaders/pbr_shadow.vsh' },
     'light_cube.fsh': { type: 'text', src: 'shaders/light_cube.fsh' },
     'light_cube.vsh': { type: 'text', src: 'shaders/light_cube.vsh' },
   },
@@ -50,8 +51,8 @@ const main = (assets: Record<string, string>) => {
 
   const lights = new Lights()
   lights.add(true, [1, 1, 0.5], [-3, 3, -3, 1], 4)
-  lights.add(false, [1, 0, 0], [3, 3, 3, 1], 4)
-  lights.add(false, [0, 1, 0], [-3, 3, 3, 1], 4)
+  lights.add(true, [1, 0, 0], [3, 3, 3, 1], 4)
+  lights.add(false, [0, 1, 0], [-3, 3, 3, 1], 2)
   lights.add(false, [0, 0, 1], [3, 3, -3, 1], 4)
 
   const lightProps: any = []
@@ -98,7 +99,7 @@ const main = (assets: Record<string, string>) => {
 
   const shadowDraw = regl({
     frag: assets['pbr_shadow.fsh'],
-    vert: assets['main.vsh'],
+    vert: assets['pbr_shadow.vsh'],
     cull: { enable: true, face: 'back' },
     uniforms: {
       'shadowCubes[0]': lights.shadowFBO(regl, 0),
