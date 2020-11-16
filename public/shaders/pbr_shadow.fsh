@@ -1,4 +1,5 @@
-precision mediump float;
+// needs to be highp for mobile devices HDR
+precision highp float;
 
 #define NUM_LIGHTS 4
 #define LIGHT_CUTOFF 0.1
