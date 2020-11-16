@@ -41,6 +41,10 @@ const loading = {
 interface MeshAttributes {
   position: vec3[]
   normal: vec3[]
+  modelA: any
+  modelB: any
+  modelC: any
+  modelD: any
 }
 
 const main = (assets: Record<string, string>) => {
@@ -50,8 +54,8 @@ const main = (assets: Record<string, string>) => {
   const camera = createCamera(regl, controls, { position: [0, 3, 10] })
 
   const lights = new Lights()
-  lights.add(true, [1, 1, 0.5], [-3, 3, -3, 1], 4)
-  lights.add(true, [1, 0, 0], [3, 3, 3, 1], 4)
+  lights.add(true, [1, 1, 0.5], [-3, 3, -3, 1], 3)
+  lights.add(true, [1, 0, 0], [3, 3, 3, 1], 2)
   lights.add(false, [0, 1, 0], [-3, 3, 3, 1], 2)
   lights.add(false, [0, 0, 1], [3, 3, -3, 1], 4)
 
@@ -110,38 +114,93 @@ const main = (assets: Record<string, string>) => {
     },
   })
 
-  const ctrl = new SpinController()
+  const ctrl = SpinController
   const up: vec3 = [0, 1, 0]
   const scale = 0.2
   const bunnyProps = [
-    new Model({ albedo: [0.55, 0.55, 0.6], metallic: 0.25, roughness: 0.82 }, [0, 0, 0], scale, 45, up, ctrl),
-    new Model({ albedo: [0.69, 0.27, 0.2], metallic: 0.2, roughness: 0.75 }, [4, 0, 4], scale, -45, up, ctrl),
-    new Model({ albedo: [0.0, 0.5, 0.0], metallic: 0.0, roughness: 0.025 }, [-4, 0, 4], scale, 90, up, ctrl),
-    new Model({ albedo: [0.0, 0.5, 0.9], metallic: 5, roughness: 0.025 }, [-2, 0, 4], scale, 35, up, ctrl),
-    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [-6, 0, -6], scale, 70, up, ctrl),
-    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [4, 0, -6], scale, 35, up, ctrl),
-    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [6, 0, -5], scale, -43, up, ctrl),
-    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [1, 0, -4], scale, -70, up, ctrl),
+    new Model({ albedo: [0.55, 0.55, 0.6], metallic: 0.25, roughness: 0.82 }, [0, 0, 0], scale, 45, up, new ctrl()),
+    new Model({ albedo: [0.69, 0.27, 0.2], metallic: 0.2, roughness: 0.75 }, [4, 0, 4], scale, -45, up, new ctrl()),
+    new Model({ albedo: [0.0, 0.5, 0.0], metallic: 0.0, roughness: 0.025 }, [-4, 0, 4], scale, 90, up, new ctrl()),
+    new Model({ albedo: [0.0, 0.5, 0.9], metallic: 5, roughness: 0.025 }, [-2, 0, 4], scale, 35, up, new ctrl()),
+    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [-6, 0, -6], scale, 70, up, new ctrl()),
+    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [4, 0, -6], scale, 35, up, new ctrl()),
+    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [6, 0, -5], scale, -43, up, new ctrl()),
+    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [1, 0, -4], scale, -70, up, new ctrl()),
+    // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [-9, 0, -9], scale, -70, up, new ctrl()),
+    // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [-7, 0, -9], scale, -70, up, new ctrl()),
+    // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [-5, 0, -9], scale, -70, up, new ctrl()),
+    // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [-3, 0, -9], scale, -70, up, new ctrl()),
+    // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [-1, 0, -9], scale, -70, up, new ctrl()),
+    // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [1, 0, -9], scale, -70, up, new ctrl()),
+    // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [3, 0, -9], scale, -70, up, new ctrl()),
+    // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [5, 0, -9], scale, -70, up, new ctrl()),
+    // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [7, 0, -9], scale, -70, up, new ctrl()),
+    // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [9, 0, -9], scale, -70, up, new ctrl()),
   ]
 
+  const bunnyBuffer = regl.buffer({ data: [], type: 'float', length: bunnyProps.length, usage: 'dynamic' })
   const bunnyDraw = regl<ModelUniforms, MeshAttributes>({
     elements: bunny.cells,
-    attributes: { position: bunny.positions, normal: normals(bunny.cells, bunny.positions) },
-    uniforms: Model.uniforms(regl),
+    attributes: {
+      position: bunny.positions,
+      normal: normals(bunny.cells, bunny.positions),
+      modelA: { buffer: bunnyBuffer, offset: 0, stride: 16 * 4, divisor: 1 },
+      modelB: { buffer: bunnyBuffer, offset: 4 * 4, stride: 16 * 4, divisor: 1 },
+      modelC: { buffer: bunnyBuffer, offset: 8 * 4, stride: 16 * 4, divisor: 1 },
+      modelD: { buffer: bunnyBuffer, offset: 12 * 4, stride: 16 * 4, divisor: 1 },
+    },
+    instances: bunnyProps.length,
+    uniforms: {
+      albedo: [1, 1, 1],
+      metallic: 0.75,
+      roughness: 0.125,
+    },
   })
 
   const planeProps = [new Model({ albedo: [0.1, 0.1, 0.1], metallic: 0.0, roughness: 1.0 }, [0, 0, 0], 20, 90, [1, 0, 0])]
-
+  const cBuf: number[][] = []
+  planeProps.forEach((l: Model) => {
+    cBuf.push(l.model)
+  })
+  const planeBuffer: REGL.Buffer = regl.buffer({ data: cBuf, usage: 'static', type: 'float' })
   const planeDraw = regl<ModelUniforms, MeshAttributes>({
     elements: plane.indices,
-    attributes: { position: plane.positions, normal: plane.normals },
-    uniforms: Model.uniforms(regl),
+    attributes: {
+      position: plane.positions,
+      normal: plane.normals,
+      modelA: { buffer: planeBuffer, offset: 0, stride: 16 * 4, divisor: 1 },
+      modelB: { buffer: planeBuffer, offset: 4 * 4, stride: 16 * 4, divisor: 1 },
+      modelC: { buffer: planeBuffer, offset: 8 * 4, stride: 16 * 4, divisor: 1 },
+      modelD: { buffer: planeBuffer, offset: 12 * 4, stride: 16 * 4, divisor: 1 },
+    },
+    instances: cBuf.length,
+    uniforms: {
+      albedo: [1, 1, 1],
+      metallic: 0.0,
+      roughness: 1.0,
+    },
   })
 
+  const buf: number[][] = []
+  lightProps.forEach((l: Model) => {
+    buf.push(l.model)
+  })
+  const lightBuffer = regl.buffer({ data: buf, usage: 'static', type: 'float' })
   const lightBulbDraw = regl<ModelUniforms, MeshAttributes>({
     elements: cube.indices,
-    attributes: { position: cube.positions, normal: cube.normals },
-    uniforms: Model.uniforms(regl),
+    attributes: {
+      position: cube.positions,
+      normal: cube.normals,
+      // @ts-ignore
+      modelA: { buffer: lightBuffer, offset: 0, stride: 16 * 4, divisor: 1 },
+      modelB: { buffer: lightBuffer, offset: 4 * 4, stride: 16 * 4, divisor: 1 },
+      modelC: { buffer: lightBuffer, offset: 8 * 4, stride: 16 * 4, divisor: 1 },
+      modelD: { buffer: lightBuffer, offset: 12 * 4, stride: 16 * 4, divisor: 1 },
+    },
+    instances: buf.length,
+    uniforms: {
+      albedo: [1, 1, 1],
+    },
   })
 
   const allLightScope = regl(lights.allUniforms(regl))
@@ -167,6 +226,11 @@ const main = (assets: Record<string, string>) => {
     statsWidget.update(deltaTime)
 
     bunnyProps.forEach((m) => m.update())
+    const bBuf: mat4[] = []
+    bunnyProps.forEach((l: Model) => {
+      bBuf.push(l.model)
+    })
+    bunnyBuffer({ data: bBuf })
 
     for (let i = 0; i < lights.all().length; i++) {
       if (!lights.get(i).on) {
@@ -175,8 +239,8 @@ const main = (assets: Record<string, string>) => {
       oneLightScope[i](() => {
         drawDepth[i](6, () => {
           regl.clear({ depth: 1 })
-          bunnyDraw(bunnyProps)
-          planeDraw(planeProps)
+          bunnyDraw()
+          planeDraw()
         })
       })
     }
@@ -185,12 +249,12 @@ const main = (assets: Record<string, string>) => {
     camera(() => {
       allLightScope(() => {
         shadowDraw(() => {
-          bunnyDraw(bunnyProps)
-          planeDraw(planeProps)
+          bunnyDraw()
+          planeDraw()
         })
       })
       emissiveDraw(() => {
-        lightBulbDraw(lightProps)
+        lightBulbDraw()
       })
     })
   })
@@ -211,6 +275,8 @@ const init = function (): REGL.Regl {
   }
 
   requestExtensions.push('oes_vertex_array_object')
+
+  requestExtensions.push('ANGLE_instanced_arrays')
 
   return REGL({
     extensions: requestExtensions,

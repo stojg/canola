@@ -10,11 +10,17 @@ export class NullController implements Controller {
 }
 
 export class SpinController implements Controller {
+  speed = 0.0
+
+  constructor() {
+    this.speed = (Math.random() - 0.5) * 10
+  }
+
   update(m: Model) {
     const transform: mat4 = mat4.clone(m.model)
 
     // Pitch Locally, Yaw Globally
-    mat4.rotateY(transform, transform, glMatrix.toRadian(1))
+    mat4.rotateY(transform, transform, glMatrix.toRadian(this.speed))
 
     m.model = transform
   }
