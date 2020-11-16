@@ -6,6 +6,8 @@ const float PI = 3.14159265359;
 uniform vec3  albedo;
 uniform float metallic;
 uniform float roughness;
+
+// general params
 uniform float ao;
 
 #define numLights 4
@@ -15,7 +17,7 @@ uniform samplerCube shadowCubes[numLights];
 struct Light {
     vec3 color;
     vec4 position;
-    bool on;
+    float radius;
 };
 uniform Light lights[numLights];
 
@@ -41,20 +43,19 @@ void main()
     vec3 F0 = vec3(0.04);
     F0 = mix(F0, albedo, metallic);
 
-    // reflectance equation
     vec3 Lo = vec3(0.0);
-
-    const int shadowCaster = 0;
 
     for (int i = 0; i < numLights; ++i)
     {
-        if (!lights[i].on) {
+        vec3 direction = lights[i].position.xyz - WorldPos;
+        float distance = length(direction);
+
+        vec3 radiance = directIllumination(distance, lights[i].radius, lights[i].color, 0.1);
+        if(dot(radiance, radiance) == 0.0) {
             continue;
         }
 
-        vec3 direction = lights[i].position.xyz - WorldPos;
-        float distance = length(direction);
-        const float bias = 0.1;
+        const float bias = 0.2;
         float env = getSampleFromArray(shadowCubes, i, direction * -1.0 * vec3(0.1)).r;
         if((env + bias) < (distance)) {
             continue;
@@ -63,10 +64,6 @@ void main()
         // calculate per-light radiance
         vec3 L = normalize(direction);
         vec3 H = normalize(V + L);
-
-        float attenuation = 1.0 / (distance * distance);
-        vec3 radiance     = lights[i].color * attenuation;
-        // vec3 radiance = directIllumination(distance, 3.0, lights[i].color, 0.01);
 
         // cook-torrance brdf
         float NDF = DistributionGGX(N, H, roughness);
@@ -84,24 +81,9 @@ void main()
         // add to outgoing radiance Lo
         float NdotL = max(dot(N, L), 0.0);
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;
-//        const float bias = 0.1;
-//        float visibility = 0.0;
-        // do soft shadows:
-        //        for (int x = 0; x < 2; x++) {
-        //            for (int y = 0; y < 2; y++) {
-        //                for (int z = 0; z < 2; z++) {
-        //                    vec4 env = getSampleFromArray(shadowCubes, i, direction * -1.0 + vec3(x, y, z) * vec3(0.1));
-        //                    visibility += (env.x + bias) < (distance) ? 0.0 : 1.0;
-        //                }
-        //            }
-        //        }
-        //        visibility *= 0.125;
-//        vec4 env = getSampleFromArray(shadowCubes, i, direction * -1.0 * vec3(0.1));
-//        visibility += (env.r + bias) < (distance) ? 0.0 : 1.0;
-
     }
 
-    vec3 ambient = vec3(0.03) * albedo * ao;
+    vec3 ambient = albedo * ao;
     vec3 color = ambient + Lo;
 
     color = color / (color + vec3(1.0));
@@ -176,4 +158,21 @@ vec3 directIllumination(float distance, float lightRadius, vec3 lightColour, flo
     attenuation = max(attenuation, 0.0);
 
     return lightColour * attenuation;
+}
+
+void doSoftShadows() {
+    //        const float bias = 0.1;
+    //        float visibility = 0.0;
+    // do soft shadows:
+    //        for (int x = 0; x < 2; x++) {
+    //            for (int y = 0; y < 2; y++) {
+    //                for (int z = 0; z < 2; z++) {
+    //                    vec4 env = getSampleFromArray(shadowCubes, i, direction * -1.0 + vec3(x, y, z) * vec3(0.1));
+    //                    visibility += (env.x + bias) < (distance) ? 0.0 : 1.0;
+    //                }
+    //            }
+    //        }
+    //        visibility *= 0.125;
+    //        vec4 env = getSampleFromArray(shadowCubes, i, direction * -1.0 * vec3(0.1));
+    //        visibility += (env.r + bias) < (distance) ? 0.0 : 1.0;
 }

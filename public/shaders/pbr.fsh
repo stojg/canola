@@ -6,6 +6,8 @@ const float PI = 3.14159265359;
 uniform vec3  albedo;
 uniform float metallic;
 uniform float roughness;
+
+// general params
 uniform float ao;
 
 // lights
@@ -68,7 +70,7 @@ void main()
         Lo += (kD * albedo / PI + specular) * radiance * NdotL;
     }
 
-    vec3 ambient = vec3(0.03) * albedo * ao;
+    vec3 ambient = albedo * ao;
     vec3 color = ambient + Lo;
 
     // reinhart

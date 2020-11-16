@@ -9,7 +9,6 @@ export interface ModelUniforms {
   albedo: vec3
   metallic: number
   roughness: number
-  ao: number
 }
 
 export class Model {
@@ -59,7 +58,6 @@ export class Model {
       albedo: regl.prop<ModelUniforms, 'albedo'>('albedo'),
       metallic: regl.prop<ModelUniforms, 'metallic'>('metallic'),
       roughness: regl.prop<ModelUniforms, 'roughness'>('roughness'),
-      ao: regl.prop<ModelUniforms, 'ao'>('ao'),
     }
   }
 

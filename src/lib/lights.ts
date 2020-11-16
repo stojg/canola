@@ -1,13 +1,17 @@
-import type { vec3, vec4 } from 'gl-matrix'
+import type { vec4 } from 'gl-matrix'
+import { vec3 } from 'gl-matrix'
 import type REGL from 'regl'
 
 interface Light {
   on: boolean
   color: vec3
   pos: vec4
+  radius: number
 }
 
 const CUBE_MAP_SIZE = 512
+
+const black = vec3.create()
 
 export class Lights {
   lights: Light[] = []
@@ -15,8 +19,8 @@ export class Lights {
 
   constructor() {}
 
-  add(on: boolean, color: vec3, pos: vec4) {
-    this.lights.push({ on: on, color: color, pos: pos })
+  add(on: boolean, color: vec3, pos: vec4, radius: number) {
+    this.lights.push({ on: on, color: color, pos: pos, radius: radius })
     this.shadowFBOs.push()
   }
 
@@ -38,12 +42,12 @@ export class Lights {
     return this.lights
   }
 
-  lightUniform(regl: REGL.Regl, id: number): REGL.DrawConfig {
+  lightUniform(regl: REGL.Regl, idx: number): REGL.DrawConfig {
     return {
       uniforms: {
-        'light.on': this.lights[id].on,
-        'light.color': this.lights[id].color,
-        'light.position': this.lights[id].pos,
+        'light.color': this.lights[idx].on ? this.lights[idx].color : black,
+        'light.position': this.lights[idx].pos,
+        'light.radius': this.lights[idx].radius,
       },
     }
   }
@@ -57,9 +61,9 @@ export class Lights {
   private luniforms(): LightUniforms {
     const a: Record<string, any> = {}
     this.lights.forEach((val: Light, idx: number) => {
-      a[`lights[${idx}].on`] = this.lights[idx].on
-      a[`lights[${idx}].color`] = this.lights[idx].color
+      a[`lights[${idx}].color`] = this.lights[idx].on ? this.lights[idx].color : black
       a[`lights[${idx}].position`] = this.lights[idx].pos
+      a[`lights[${idx}].radius`] = this.lights[idx].radius
     })
     return <LightUniforms>a
   }

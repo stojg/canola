@@ -49,10 +49,10 @@ const main = (assets: Record<string, string>) => {
   const camera = createCamera(regl, controls, { position: [0, 3, 10] })
 
   const lights = new Lights()
-  lights.add(true, [20, 20, 10], [-3, 3, -3, 1])
-  lights.add(true, [20, 0, 0], [3, 3, 3, 1])
-  lights.add(false, [0, 10, 0], [-3, 3, 3, 1])
-  lights.add(false, [0, 0, 10], [3, 3, -3, 1])
+  lights.add(true, [1, 1, 0.5], [-3, 3, -3, 1], 4)
+  lights.add(false, [1, 0, 0], [3, 3, 3, 1], 4)
+  lights.add(false, [0, 1, 0], [-3, 3, 3, 1], 4)
+  lights.add(false, [0, 0, 1], [3, 3, -3, 1], 4)
 
   const lightProps: any = []
   lights.all().forEach((light, i) => {
@@ -105,6 +105,7 @@ const main = (assets: Record<string, string>) => {
       'shadowCubes[1]': lights.shadowFBO(regl, 1),
       'shadowCubes[2]': lights.shadowFBO(regl, 2),
       'shadowCubes[3]': lights.shadowFBO(regl, 3),
+      ao: 0.00001,
     },
   })
 
@@ -112,98 +113,14 @@ const main = (assets: Record<string, string>) => {
   const up: vec3 = [0, 1, 0]
   const scale = 0.2
   const bunnyProps = [
-    new Model({ albedo: [0.55, 0.55, 0.6], metallic: 0.25, roughness: 0.82, ao: 0.05 }, [0, 0, 0], scale, 45, up, ctrl),
-    new Model(
-      {
-        albedo: [0.69, 0.27, 0.2],
-        metallic: 0.2,
-        roughness: 0.75,
-        ao: 0.05,
-      },
-      [4, 0, 4],
-      scale,
-      -45,
-      up,
-      ctrl,
-    ),
-    new Model(
-      {
-        albedo: [0.0, 0.5, 0.0],
-        metallic: 0.0,
-        roughness: 0.025,
-        ao: 0.05,
-      },
-      [-4, 0, 4],
-      scale,
-      90,
-      up,
-      ctrl,
-    ),
-    new Model(
-      {
-        albedo: [0.0, 0.5, 0.9],
-        metallic: 5,
-        roughness: 0.025,
-        ao: 0.05,
-      },
-      [-2, 0, 4],
-      scale,
-      35,
-      up,
-      ctrl,
-    ),
-    new Model(
-      {
-        albedo: [0.5, 0.5, 0.5],
-        metallic: 5,
-        roughness: 0.025,
-        ao: 0.05,
-      },
-      [-6, 0, -6],
-      scale,
-      70,
-      up,
-      ctrl,
-    ),
-    new Model(
-      {
-        albedo: [0.5, 0.5, 0.5],
-        metallic: 5,
-        roughness: 0.025,
-        ao: 0.05,
-      },
-      [4, 0, -6],
-      scale,
-      35,
-      up,
-      ctrl,
-    ),
-    new Model(
-      {
-        albedo: [0.5, 0.5, 0.5],
-        metallic: 5,
-        roughness: 0.025,
-        ao: 0.05,
-      },
-      [6, 0, -5],
-      scale,
-      -43,
-      up,
-      ctrl,
-    ),
-    new Model(
-      {
-        albedo: [0.5, 0.5, 0.5],
-        metallic: 5,
-        roughness: 0.025,
-        ao: 0.05,
-      },
-      [1, 0, -4],
-      scale,
-      -70,
-      up,
-      ctrl,
-    ),
+    new Model({ albedo: [0.55, 0.55, 0.6], metallic: 0.25, roughness: 0.82 }, [0, 0, 0], scale, 45, up, ctrl),
+    new Model({ albedo: [0.69, 0.27, 0.2], metallic: 0.2, roughness: 0.75 }, [4, 0, 4], scale, -45, up, ctrl),
+    new Model({ albedo: [0.0, 0.5, 0.0], metallic: 0.0, roughness: 0.025 }, [-4, 0, 4], scale, 90, up, ctrl),
+    new Model({ albedo: [0.0, 0.5, 0.9], metallic: 5, roughness: 0.025 }, [-2, 0, 4], scale, 35, up, ctrl),
+    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [-6, 0, -6], scale, 70, up, ctrl),
+    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [4, 0, -6], scale, 35, up, ctrl),
+    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [6, 0, -5], scale, -43, up, ctrl),
+    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [1, 0, -4], scale, -70, up, ctrl),
   ]
 
   const bunnyDraw = regl<ModelUniforms, MeshAttributes>({
@@ -212,20 +129,7 @@ const main = (assets: Record<string, string>) => {
     uniforms: Model.uniforms(regl),
   })
 
-  const planeProps = [
-    new Model(
-      {
-        albedo: [0.42, 0.4, 0.38],
-        metallic: 0.0,
-        roughness: 1.0,
-        ao: 0.05,
-      },
-      [0, 0, 0],
-      20,
-      90,
-      [1, 0, 0],
-    ),
-  ]
+  const planeProps = [new Model({ albedo: [0.1, 0.1, 0.1], metallic: 0.0, roughness: 1.0 }, [0, 0, 0], 20, 90, [1, 0, 0])]
 
   const planeDraw = regl<ModelUniforms, MeshAttributes>({
     elements: plane.indices,
@@ -249,23 +153,19 @@ const main = (assets: Record<string, string>) => {
 
   const drawCalls: [REGL.DrawCommand, string][] = []
   lights.lights.forEach((l, i) => {
-    if (l.on) {
-      drawCalls.push([drawDepth[i], `lightmap${i}`])
-    }
+    if (l.on) drawCalls.push([drawDepth[i], `lightmap${i}`])
   })
   drawCalls.push([shadowDraw, 'shadowed'])
   drawCalls.push([emissiveDraw, 'emissive'])
   const statsWidget = createStatsWidget(drawCalls, regl)
 
   let prevTime = 0.0
-  regl.frame(({ tick, time, viewportHeight }) => {
+  regl.frame(({ time }) => {
     const deltaTime = time - prevTime
     prevTime = time
     statsWidget.update(deltaTime)
 
-    bunnyProps.forEach((m) => {
-      m.update()
-    })
+    bunnyProps.forEach((m) => m.update())
 
     for (let i = 0; i < lights.all().length; i++) {
       if (!lights.get(i).on) {
@@ -280,7 +180,7 @@ const main = (assets: Record<string, string>) => {
       })
     }
 
-    regl.clear({ color: [0.0, 0.0, 0.0, 255], depth: 1 })
+    regl.clear({ color: [0.06, 0.06, 0.06, 255], depth: 1 })
     camera(() => {
       allLightScope(() => {
         shadowDraw(() => {
