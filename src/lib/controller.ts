@@ -13,7 +13,7 @@ export class SpinController implements Controller {
   speed = 0.0
 
   constructor() {
-    this.speed = (Math.random() - 0.5) * 10
+    this.speed = (Math.random() - 0.5) * 5
   }
 
   update(m: Model) {

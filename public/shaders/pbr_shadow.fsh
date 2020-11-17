@@ -8,9 +8,6 @@ precision highp float;
 const float PI = 3.14159265359;
 
 // material uniforms
-uniform vec3  albedo;
-uniform float metallic;
-uniform float roughness;
 // general uniforms
 uniform float ao;
 // light uniforms
@@ -26,8 +23,11 @@ uniform samplerCube shadowCubes[NUM_LIGHTS];
 varying vec3 WorldPos;
 varying vec3 Normal;
 varying vec3 CamDirection;
+varying vec3 Albedo;
+varying float Metallic;
+varying float Roughness;
 
-vec3 calcPointLight(vec3 normal, vec3 camDirection, vec3 F0 , Light light);
+vec3 calcPointLight(vec3 normal, vec3 camDirection, vec3 F0 , Light light, float roughness);
 vec4 getSampleFromArray(int ndx, vec3 uv);
 
 void main()
@@ -36,12 +36,12 @@ void main()
     vec3 V = normalize(CamDirection);
 
     vec3 F0 = vec3(0.04);
-    F0 = mix(F0, albedo, metallic);
+    F0 = mix(F0, Albedo, Metallic);
     vec3 Lo = vec3(0.0);
 
     for (int i = 0; i < NUM_LIGHTS; ++i)
     {
-        vec3 col = calcPointLight(N, V, F0, lights[i]);
+        vec3 col = calcPointLight(N, V, F0, lights[i], Roughness);
         if (dot(col, col) < 0.0000000001) {
             continue;
         }
@@ -52,7 +52,7 @@ void main()
         Lo += col;
     }
 
-    vec3 ambient = albedo * ao;
+    vec3 ambient = Albedo * ao;
     vec3 color = ambient + Lo;
 
     color = color / (color + vec3(1.0));
@@ -112,7 +112,7 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
     return ggx1 * ggx2;
 }
 
-vec3 calcPointLight(vec3 normal, vec3 camDirection, vec3 F0 , Light light) {
+vec3 calcPointLight(vec3 normal, vec3 camDirection, vec3 F0 , Light light, float roughness) {
 
     vec3 lightDirection = light.position.xyz - WorldPos;
     float lightDistance = length(lightDirection);
@@ -139,7 +139,7 @@ vec3 calcPointLight(vec3 normal, vec3 camDirection, vec3 F0 , Light light) {
 
     vec3 kS = F;
     vec3 kD = vec3(1.0) - kS;
-    kD *= 1.0 - metallic;
+    kD *= 1.0 - Metallic;
 
     vec3 numerator    = NDF * G * F;
     float denominator = 4.0 * max(dot(normal, camDirection), 0.0) * max(dot(normal, L), 0.0);
@@ -148,5 +148,5 @@ vec3 calcPointLight(vec3 normal, vec3 camDirection, vec3 F0 , Light light) {
     // add to outgoing radiance Lo
     float NdotL = max(dot(normal, L), 0.0);
     vec3 radiance = lightColor * attenuation;
-    return (kD * albedo / PI + specular) * radiance * NdotL;
+    return (kD * Albedo / PI + specular) * radiance * NdotL;
 }

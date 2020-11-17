@@ -70,16 +70,16 @@ export class Lights {
 }
 
 interface LightUniforms {
-  'lights[0].on': boolean
+  'lights[0].radius': number
   'lights[0].color': vec3
   'lights[0].position': vec4
-  'lights[1].on': boolean
+  'lights[1].radius': number
   'lights[1].color': vec3
   'lights[1].position': vec4
-  'lights[2].on': boolean
+  'lights[2].radius': number
   'lights[2].color': vec3
   'lights[2].position': vec4
-  'lights[3].on': boolean
+  'lights[3].radius': number
   'lights[3].color': vec3
   'lights[3].position': vec4
 }

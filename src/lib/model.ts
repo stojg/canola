@@ -3,6 +3,7 @@ import type { Material } from './material'
 import type REGL from 'regl'
 import type { Controller } from './controller'
 import { NullController } from './controller'
+import deepmerge from 'deepmerge'
 
 export interface ModelUniforms {
   model: mat4
@@ -10,6 +11,8 @@ export interface ModelUniforms {
   metallic: number
   roughness: number
 }
+
+export type BufferData = [number, number, number, number, number, number, number, number, number, number, number, number, number, number, number, number, number, number, number, number, number]
 
 export class Model {
   private _model: mat4
@@ -32,6 +35,32 @@ export class Model {
     return this._model
   }
 
+  get bufferData(): BufferData {
+    return [
+      this.model[0],
+      this.model[1],
+      this.model[2],
+      this.model[3],
+      this.model[4],
+      this.model[5],
+      this.model[6],
+      this.model[7],
+      this.model[8],
+      this.model[9],
+      this.model[10],
+      this.model[11],
+      this.model[12],
+      this.model[13],
+      this.model[14],
+      this.model[15],
+      this.albedo[0],
+      this.albedo[1],
+      this.albedo[2],
+      this.metallic,
+      this.roughness,
+    ]
+  }
+
   set model(value: mat4) {
     this._model = value
   }
@@ -40,16 +69,26 @@ export class Model {
     return this.material.albedo
   }
 
-  get ao() {
-    return this.material.ao
-  }
-
   get metallic() {
     return this.material.metallic
   }
 
   get roughness() {
     return this.material.roughness
+  }
+
+  static config(prev: REGL.DrawConfig, buf: REGL.Buffer) {
+    return deepmerge(prev, {
+      attributes: {
+        modelA: { buffer: buf, offset: 0, stride: 21 * 4, divisor: 1 },
+        modelB: { buffer: buf, offset: 4 * 4, stride: 21 * 4, divisor: 1 },
+        modelC: { buffer: buf, offset: 8 * 4, stride: 21 * 4, divisor: 1 },
+        modelD: { buffer: buf, offset: 12 * 4, stride: 21 * 4, divisor: 1 },
+        albedo: { buffer: buf, offset: 16 * 4, stride: 21 * 4, divisor: 1 },
+        metallic: { buffer: buf, offset: 19 * 4, stride: 21 * 4, divisor: 1 },
+        roughness: { buffer: buf, offset: 20 * 4, stride: 21 * 4, divisor: 1 },
+      },
+    })
   }
 
   static uniforms(regl: REGL.Regl) {

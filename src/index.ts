@@ -13,6 +13,8 @@ import { Lights } from './lib/lights'
 import { debugLogger } from './lib/shame'
 import { halfFloatTextureExt, queryTimerExt, textureFloatExt } from './lib/cap'
 import { SpinController } from './lib/controller'
+import { Mesh } from './lib/mesh'
+import { InstancedMesh } from './lib/instanced_mesh'
 
 debugLogger()
 
@@ -54,8 +56,8 @@ const main = (assets: Record<string, string>) => {
   const camera = createCamera(regl, controls, { position: [0, 3, 10] })
 
   const lights = new Lights()
-  lights.add(true, [1, 1, 0.5], [-3, 3, -3, 1], 3)
-  lights.add(true, [1, 0, 0], [3, 3, 3, 1], 2)
+  lights.add(true, [1, 1, 1], [-3, 3, -3, 1], 5)
+  lights.add(true, [1, 0, 0], [3, 3, 3, 1], 5)
   lights.add(false, [0, 1, 0], [-3, 3, 3, 1], 2)
   lights.add(false, [0, 0, 1], [3, 3, -3, 1], 4)
 
@@ -110,7 +112,7 @@ const main = (assets: Record<string, string>) => {
       'shadowCubes[1]': lights.shadowFBO(regl, 1),
       'shadowCubes[2]': lights.shadowFBO(regl, 2),
       'shadowCubes[3]': lights.shadowFBO(regl, 3),
-      ao: 0.00001,
+      ao: 0.001,
     },
   })
 
@@ -122,10 +124,11 @@ const main = (assets: Record<string, string>) => {
     new Model({ albedo: [0.69, 0.27, 0.2], metallic: 0.2, roughness: 0.75 }, [4, 0, 4], scale, -45, up, new ctrl()),
     new Model({ albedo: [0.0, 0.5, 0.0], metallic: 0.0, roughness: 0.025 }, [-4, 0, 4], scale, 90, up, new ctrl()),
     new Model({ albedo: [0.0, 0.5, 0.9], metallic: 5, roughness: 0.025 }, [-2, 0, 4], scale, 35, up, new ctrl()),
-    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [-6, 0, -6], scale, 70, up, new ctrl()),
-    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [4, 0, -6], scale, 35, up, new ctrl()),
-    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [6, 0, -5], scale, -43, up, new ctrl()),
+    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 0.5, roughness: 0.025 }, [-6, 0, -6], scale, 70, up, new ctrl()),
+    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 0.5, roughness: 0.025 }, [4, 0, -6], scale, 35, up, new ctrl()),
+    new Model({ albedo: [1, 1, 1], metallic: 0.75, roughness: 0.125 }, [2, 0, 2], scale, 35, up, new ctrl()),
     new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [1, 0, -4], scale, -70, up, new ctrl()),
+    // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [6, 0, -5], scale, -43, up, new ctrl()),
     // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [-9, 0, -9], scale, -70, up, new ctrl()),
     // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [-7, 0, -9], scale, -70, up, new ctrl()),
     // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [-5, 0, -9], scale, -70, up, new ctrl()),
@@ -138,70 +141,18 @@ const main = (assets: Record<string, string>) => {
     // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [9, 0, -9], scale, -70, up, new ctrl()),
   ]
 
-  const bunnyBuffer = regl.buffer({ data: [], type: 'float', length: bunnyProps.length, usage: 'dynamic' })
-  const bunnyDraw = regl<ModelUniforms, MeshAttributes>({
-    elements: bunny.cells,
-    attributes: {
-      position: bunny.positions,
-      normal: normals(bunny.cells, bunny.positions),
-      modelA: { buffer: bunnyBuffer, offset: 0, stride: 16 * 4, divisor: 1 },
-      modelB: { buffer: bunnyBuffer, offset: 4 * 4, stride: 16 * 4, divisor: 1 },
-      modelC: { buffer: bunnyBuffer, offset: 8 * 4, stride: 16 * 4, divisor: 1 },
-      modelD: { buffer: bunnyBuffer, offset: 12 * 4, stride: 16 * 4, divisor: 1 },
-    },
-    instances: bunnyProps.length,
-    uniforms: {
-      albedo: [1, 1, 1],
-      metallic: 0.75,
-      roughness: 0.125,
-    },
-  })
+  const bunnyMesh = new Mesh(bunny.positions, bunny.cells)
+  const bunnies = new InstancedMesh(regl, bunnyMesh, bunnyProps)
+  const bunnyDraw = regl(bunnies.config({}))
 
-  const planeProps = [new Model({ albedo: [0.1, 0.1, 0.1], metallic: 0.0, roughness: 1.0 }, [0, 0, 0], 20, 90, [1, 0, 0])]
-  const cBuf: number[][] = []
-  planeProps.forEach((l: Model) => {
-    cBuf.push(l.model)
-  })
-  const planeBuffer: REGL.Buffer = regl.buffer({ data: cBuf, usage: 'static', type: 'float' })
-  const planeDraw = regl<ModelUniforms, MeshAttributes>({
-    elements: plane.indices,
-    attributes: {
-      position: plane.positions,
-      normal: plane.normals,
-      modelA: { buffer: planeBuffer, offset: 0, stride: 16 * 4, divisor: 1 },
-      modelB: { buffer: planeBuffer, offset: 4 * 4, stride: 16 * 4, divisor: 1 },
-      modelC: { buffer: planeBuffer, offset: 8 * 4, stride: 16 * 4, divisor: 1 },
-      modelD: { buffer: planeBuffer, offset: 12 * 4, stride: 16 * 4, divisor: 1 },
-    },
-    instances: cBuf.length,
-    uniforms: {
-      albedo: [1, 1, 1],
-      metallic: 0.0,
-      roughness: 1.0,
-    },
-  })
+  const planeProps = [new Model({ albedo: [0.3, 0.3, 0.3], metallic: 0.1, roughness: 0.9 }, [0, 0, 0], 20)]
+  const planeMesh = new Mesh(plane.positions, plane.indices, plane.normals)
+  const planes = new InstancedMesh(regl, planeMesh, planeProps)
+  const planeDraw = regl(planes.config({}))
 
-  const buf: number[][] = []
-  lightProps.forEach((l: Model) => {
-    buf.push(l.model)
-  })
-  const lightBuffer = regl.buffer({ data: buf, usage: 'static', type: 'float' })
-  const lightBulbDraw = regl<ModelUniforms, MeshAttributes>({
-    elements: cube.indices,
-    attributes: {
-      position: cube.positions,
-      normal: cube.normals,
-      // @ts-ignore
-      modelA: { buffer: lightBuffer, offset: 0, stride: 16 * 4, divisor: 1 },
-      modelB: { buffer: lightBuffer, offset: 4 * 4, stride: 16 * 4, divisor: 1 },
-      modelC: { buffer: lightBuffer, offset: 8 * 4, stride: 16 * 4, divisor: 1 },
-      modelD: { buffer: lightBuffer, offset: 12 * 4, stride: 16 * 4, divisor: 1 },
-    },
-    instances: buf.length,
-    uniforms: {
-      albedo: [1, 1, 1],
-    },
-  })
+  const cubeMesh = new Mesh(cube.positions, cube.indices, cube.normals)
+  const lightsI = new InstancedMesh(regl, cubeMesh, lightProps)
+  const lightBulbDraw = regl(lightsI.config({}))
 
   const allLightScope = regl(lights.allUniforms(regl))
 
@@ -225,12 +176,7 @@ const main = (assets: Record<string, string>) => {
     prevTime = time
     statsWidget.update(deltaTime)
 
-    bunnyProps.forEach((m) => m.update())
-    const bBuf: mat4[] = []
-    bunnyProps.forEach((l: Model) => {
-      bBuf.push(l.model)
-    })
-    bunnyBuffer({ data: bBuf })
+    bunnies.update()
 
     for (let i = 0; i < lights.all().length; i++) {
       if (!lights.get(i).on) {
