@@ -46,7 +46,7 @@ void main()
             continue;
         }
         vec3 lightRay = WorldPos - lights[i].position.xyz;
-        if((getSampleFromArray(i, lightRay * vec3(0.1)).r * SHADOW_BIAS) < (dot(lightRay, lightRay))) {
+        if((getSampleFromArray(i, lightRay).r * SHADOW_BIAS) < (dot(lightRay, lightRay))) {
             continue;
         }
         Lo += col;

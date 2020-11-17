@@ -15,6 +15,11 @@ import {SpinController} from "./lib/controller.js";
 import {Mesh} from "./lib/mesh.js";
 import {InstancedMesh} from "./lib/instanced_mesh.js";
 debugLogger();
+const seed = (s) => () => {
+  s = Math.sin(s) * 1e4;
+  return s - Math.floor(s);
+};
+const rand = seed(1815);
 const loading = {
   manifest: {
     "main.fsh": {type: "text", src: "shaders/main.fsh"},
@@ -38,6 +43,9 @@ const loading = {
 };
 const main = (assets) => {
   const regl2 = init();
+  const cubeMesh = new Mesh(cube2.positions, cube2.indices, cube2.normals);
+  const planeMesh = new Mesh(plane2.positions, plane2.indices, plane2.normals);
+  const bunnyMesh = new Mesh(bunny2.positions, bunny2.cells);
   const controls2 = new FPSControls(regl2._gl.canvas);
   const camera2 = createCamera(regl2, controls2, {position: [0, 3, 10]});
   const lights2 = new Lights();
@@ -54,7 +62,7 @@ const main = (assets) => {
   });
   function lightCubeDraw(lightId) {
     const shadowFbo = lights2.shadowFBO(regl2, lightId);
-    const proj = mat4.perspective(mat4.create(), glMatrix.toRadian(90), 1, 0.1, 15);
+    const proj = mat4.perspective(mat4.create(), glMatrix.toRadian(90), 1, 0.5, 15);
     return {
       frag: assets["light_cube.fsh"],
       vert: assets["light_cube.vsh"],
@@ -99,24 +107,20 @@ const main = (assets) => {
   const ctrl = SpinController;
   const up = [0, 1, 0];
   const scale = 0.2;
-  const bunnyProps = [
-    new Model({albedo: [0.55, 0.55, 0.6], metallic: 0.25, roughness: 0.82}, [0, 0, 0], scale, 45, up, new ctrl()),
-    new Model({albedo: [0.69, 0.27, 0.2], metallic: 0.2, roughness: 0.75}, [4, 0, 4], scale, -45, up, new ctrl()),
-    new Model({albedo: [0, 0.5, 0], metallic: 0, roughness: 0.025}, [-4, 0, 4], scale, 90, up, new ctrl()),
-    new Model({albedo: [0, 0.5, 0.9], metallic: 5, roughness: 0.025}, [-2, 0, 4], scale, 35, up, new ctrl()),
-    new Model({albedo: [0.5, 0.5, 0.5], metallic: 0.5, roughness: 0.025}, [-6, 0, -6], scale, 70, up, new ctrl()),
-    new Model({albedo: [0.5, 0.5, 0.5], metallic: 0.5, roughness: 0.025}, [4, 0, -6], scale, 35, up, new ctrl()),
-    new Model({albedo: [1, 1, 1], metallic: 0.75, roughness: 0.125}, [2, 0, 2], scale, 35, up, new ctrl()),
-    new Model({albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025}, [1, 0, -4], scale, -70, up, new ctrl())
-  ];
-  const bunnyMesh = new Mesh(bunny2.positions, bunny2.cells);
+  const y = 0;
+  const bunnyProps = [];
+  const N = 5;
+  for (let x = 0; x < N; x++) {
+    for (let z = 0; z < N; z++) {
+      const pos = [x * (20 / N) - 8.5, y, z * (20 / N) - 7.5];
+      bunnyProps.push(new Model({albedo: [rand(), rand(), rand()], metallic: rand(), roughness: rand()}, pos, scale, -43, up, new ctrl()));
+    }
+  }
   const bunnies = new InstancedMesh(regl2, bunnyMesh, bunnyProps);
   const bunnyDraw = regl2(bunnies.config({}));
   const planeProps = [new Model({albedo: [0.3, 0.3, 0.3], metallic: 0.1, roughness: 0.9}, [0, 0, 0], 20)];
-  const planeMesh = new Mesh(plane2.positions, plane2.indices, plane2.normals);
   const planes = new InstancedMesh(regl2, planeMesh, planeProps);
   const planeDraw = regl2(planes.config({}));
-  const cubeMesh = new Mesh(cube2.positions, cube2.indices, cube2.normals);
   const lightsI = new InstancedMesh(regl2, cubeMesh, lightProps);
   const lightBulbDraw = regl2(lightsI.config({}));
   const allLightScope = regl2(lights2.allUniforms(regl2));
