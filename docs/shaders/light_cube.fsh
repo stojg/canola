@@ -5,9 +5,8 @@ struct Light {
     vec4 position;
 };
 
-uniform Light light;
-varying vec3 WorldPos;
+varying vec3 lightDirection;
 
 void main () {
-    gl_FragColor = vec4(vec3(distance(WorldPos, light.position.xyz)), 1.0);
+    gl_FragColor = vec4(vec3(dot(lightDirection, lightDirection)), 1.0);
 }

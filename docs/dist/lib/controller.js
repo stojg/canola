@@ -4,9 +4,13 @@ export class NullController {
   }
 }
 export class SpinController {
+  constructor() {
+    this.speed = 0;
+    this.speed = (Math.random() - 0.5) * 5;
+  }
   update(m) {
     const transform = mat4.clone(m.model);
-    mat4.rotateY(transform, transform, glMatrix.toRadian(1));
+    mat4.rotateY(transform, transform, glMatrix.toRadian(this.speed));
     m.model = transform;
   }
 }

@@ -2,10 +2,7 @@ precision highp float;
 
 const float PI = 3.14159265359;
 
-// material parameters
-uniform vec3  albedo;
-uniform float metallic;
-uniform float roughness;
+// general params
 uniform float ao;
 
 // lights
@@ -22,6 +19,10 @@ uniform vec3 camPos;
 // from vertexshader
 varying vec3 WorldPos;
 varying vec3 Normal;
+// material parameters
+varying vec3  Albedo;
+varying float Metallic;
+varying float Roughness;
 
 float DistributionGGX(vec3 N, vec3 H, float roughness);
 float GeometrySchlickGGX(float NdotV, float roughness);
@@ -34,7 +35,7 @@ void main()
     vec3 V = normalize(camPos - WorldPos);
 
     vec3 F0 = vec3(0.04);
-    F0 = mix(F0, albedo, metallic);
+    F0 = mix(F0, Albedo, Metallic);
 
     // reflectance equation
     vec3 Lo = vec3(0.0);
@@ -51,13 +52,13 @@ void main()
         vec3 radiance     = lights[i].color * attenuation;
 
         // cook-torrance brdf
-        float NDF = DistributionGGX(N, H, roughness);
-        float G   = GeometrySmith(N, V, L, roughness);
+        float NDF = DistributionGGX(N, H, Roughness);
+        float G   = GeometrySmith(N, V, L, Roughness);
         vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);
 
         vec3 kS = F;
         vec3 kD = vec3(1.0) - kS;
-        kD *= 1.0 - metallic;
+        kD *= 1.0 - Metallic;
 
         vec3 numerator    = NDF * G * F;
         float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
@@ -65,10 +66,10 @@ void main()
 
         // add to outgoing radiance Lo
         float NdotL = max(dot(N, L), 0.0);
-        Lo += (kD * albedo / PI + specular) * radiance * NdotL;
+        Lo += (kD * Albedo / PI + specular) * radiance * NdotL;
     }
 
-    vec3 ambient = vec3(0.03) * albedo * ao;
+    vec3 ambient = Albedo * ao;
     vec3 color = ambient + Lo;
 
     // reinhart

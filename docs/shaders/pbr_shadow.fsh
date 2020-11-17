@@ -1,113 +1,73 @@
+// needs to be highp for mobile devices HDR
 precision highp float;
+
+#define NUM_LIGHTS 4
+#define LIGHT_CUTOFF 0.1
+#define SHADOW_BIAS 1.1
 
 const float PI = 3.14159265359;
 
-// material parameters
-uniform vec3  albedo;
-uniform float metallic;
-uniform float roughness;
+// material uniforms
+// general uniforms
 uniform float ao;
-
-#define numLights 4
-uniform samplerCube shadowCubes[numLights];
-
-// lights
+// light uniforms
 struct Light {
     vec3 color;
     vec4 position;
-    bool on;
+    float radius;
 };
-uniform Light lights[numLights];
-
-// camera
-uniform vec3 camPos;
+uniform Light lights[NUM_LIGHTS];
+uniform samplerCube shadowCubes[NUM_LIGHTS];
 
 // from vertexshader
 varying vec3 WorldPos;
 varying vec3 Normal;
+varying vec3 CamDirection;
+varying vec3 Albedo;
+varying float Metallic;
+varying float Roughness;
 
-float DistributionGGX(vec3 N, vec3 H, float roughness);
-float GeometrySchlickGGX(float NdotV, float roughness);
-float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness);
-vec3 fresnelSchlick(float cosTheta, vec3 F0);
-vec4 getSampleFromArray(samplerCube textures[numLights], int ndx, vec3 uv);
-vec3 directIllumination(float distance, float lightRadius, vec3 lightColour, float cutoff);
+vec3 calcPointLight(vec3 normal, vec3 camDirection, vec3 F0 , Light light, float roughness);
+vec4 getSampleFromArray(int ndx, vec3 uv);
 
 void main()
 {
     vec3 N = normalize(Normal);
-    vec3 V = normalize(camPos - WorldPos);
+    vec3 V = normalize(CamDirection);
 
     vec3 F0 = vec3(0.04);
-    F0 = mix(F0, albedo, metallic);
-
-    // reflectance equation
+    F0 = mix(F0, Albedo, Metallic);
     vec3 Lo = vec3(0.0);
 
-    const int shadowCaster = 0;
-
-    for (int i = 0; i < numLights; ++i)
+    for (int i = 0; i < NUM_LIGHTS; ++i)
     {
-        if (!lights[i].on) {
+        vec3 col = calcPointLight(N, V, F0, lights[i], Roughness);
+        if (dot(col, col) < 0.0000000001) {
             continue;
         }
-
-        vec3 direction = lights[i].position.xyz - WorldPos;
-        float distance = length(direction);
-        const float bias = 0.1;
-        float env = getSampleFromArray(shadowCubes, i, direction * -1.0 * vec3(0.1)).r;
-        if((env + bias) < (distance)) {
+        vec3 lightRay = WorldPos - lights[i].position.xyz;
+        if((getSampleFromArray(i, lightRay * vec3(0.1)).r * SHADOW_BIAS) < (dot(lightRay, lightRay))) {
             continue;
         }
-
-        // calculate per-light radiance
-        vec3 L = normalize(direction);
-        vec3 H = normalize(V + L);
-
-        float attenuation = 1.0 / (distance * distance);
-        vec3 radiance     = lights[i].color * attenuation;
-        // vec3 radiance = directIllumination(distance, 3.0, lights[i].color, 0.01);
-
-        // cook-torrance brdf
-        float NDF = DistributionGGX(N, H, roughness);
-        float G   = GeometrySmith(N, V, L, roughness);
-        vec3 F    = fresnelSchlick(max(dot(H, V), 0.0), F0);
-
-        vec3 kS = F;
-        vec3 kD = vec3(1.0) - kS;
-        kD *= 1.0 - metallic;
-
-        vec3 numerator    = NDF * G * F;
-        float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
-        vec3 specular     = numerator / max(denominator, 0.001);
-
-        // add to outgoing radiance Lo
-        float NdotL = max(dot(N, L), 0.0);
-        Lo += (kD * albedo / PI + specular) * radiance * NdotL;
-//        const float bias = 0.1;
-//        float visibility = 0.0;
-        // do soft shadows:
-        //        for (int x = 0; x < 2; x++) {
-        //            for (int y = 0; y < 2; y++) {
-        //                for (int z = 0; z < 2; z++) {
-        //                    vec4 env = getSampleFromArray(shadowCubes, i, direction * -1.0 + vec3(x, y, z) * vec3(0.1));
-        //                    visibility += (env.x + bias) < (distance) ? 0.0 : 1.0;
-        //                }
-        //            }
-        //        }
-        //        visibility *= 0.125;
-//        vec4 env = getSampleFromArray(shadowCubes, i, direction * -1.0 * vec3(0.1));
-//        visibility += (env.r + bias) < (distance) ? 0.0 : 1.0;
-
+        Lo += col;
     }
 
-    vec3 ambient = vec3(0.03) * albedo * ao;
+    vec3 ambient = Albedo * ao;
     vec3 color = ambient + Lo;
 
     color = color / (color + vec3(1.0));
     color = pow(color, vec3(1.0/2.2));
 
     gl_FragColor = vec4(color, 1.0);
+}
+
+vec4 getSampleFromArray(int ndx, vec3 uv) {
+    for (int i = 0; i < NUM_LIGHTS; ++i) {
+        if (i == ndx) {
+            return textureCube(shadowCubes[i], uv);
+        }
+    }
+    return vec4(1.0, 1.0, 1.0, 1.0);
 }
 
 vec3 fresnelSchlick(float cosTheta, vec3 F0)
@@ -134,7 +94,7 @@ float GeometrySchlickGGX(float NdotV, float roughness)
 {
     float r = (roughness + 1.0);
     // according to disney and epic squaring the roughness in both the geometry and normal distribution function.
-    float k = (r*r) / 8.0;
+    float k = (r*r) * 0.125; // (r*r) / 8
 
     float num   = NdotV;
     float denom = NdotV * (1.0 - k) + k;
@@ -152,28 +112,41 @@ float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
     return ggx1 * ggx2;
 }
 
-vec4 getSampleFromArray(samplerCube textures[numLights], int ndx, vec3 uv) {
-    for (int i = 0; i < numLights; ++i) {
-        if (i == ndx) {
-            return textureCube(shadowCubes[i], uv);
-        }
-    }
-    return vec4(1.0, 1.0, 1.0, 1.0);
-}
+vec3 calcPointLight(vec3 normal, vec3 camDirection, vec3 F0 , Light light, float roughness) {
 
-vec3 directIllumination(float distance, float lightRadius, vec3 lightColour, float cutoff)
-{
-    float d = max(distance - lightRadius, 0.0);
+    vec3 lightDirection = light.position.xyz - WorldPos;
+    float lightDistance = length(lightDirection);
+    vec3 lightColor = light.color;
 
     // calculate basic attenuation
-    float denom = d/lightRadius + 1.0;
+    float d = max(lightDistance - light.radius, 0.0);
+    float denom = d/light.radius + 1.0;
     float attenuation = 1.0 / (denom*denom);
-
-    // scale and bias attenuation such that:
-    //   attenuation == 0 at extent of max influence
-    //   attenuation == 1 when d == 0
-    attenuation = (attenuation - cutoff) / (1.0 - cutoff);
+    // scale and bias attenuation such that: attenuation == 0 at extent of max influence and attenuation == 1 when d == 0
+    attenuation = (attenuation - LIGHT_CUTOFF) / (1.0 - LIGHT_CUTOFF);
+    if (attenuation < 0.0) {
+        return vec3(0);
+    }
     attenuation = max(attenuation, 0.0);
 
-    return lightColour * attenuation;
+    vec3 L = normalize(lightDirection);
+    vec3 H = normalize(camDirection + L);
+
+    // cook-torrance brdf
+    float NDF = DistributionGGX(normal, H, roughness);
+    float G   = GeometrySmith(normal, camDirection, L, roughness);
+    vec3 F    = fresnelSchlick(max(dot(H, camDirection), 0.0), F0);
+
+    vec3 kS = F;
+    vec3 kD = vec3(1.0) - kS;
+    kD *= 1.0 - Metallic;
+
+    vec3 numerator    = NDF * G * F;
+    float denominator = 4.0 * max(dot(normal, camDirection), 0.0) * max(dot(normal, L), 0.0);
+    vec3 specular     = numerator / max(denominator, 0.001);
+
+    // add to outgoing radiance Lo
+    float NdotL = max(dot(normal, L), 0.0);
+    vec3 radiance = lightColor * attenuation;
+    return (kD * Albedo / PI + specular) * radiance * NdotL;
 }

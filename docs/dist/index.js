@@ -3,7 +3,6 @@ import resl2 from "../web/resl.js";
 import {createCamera} from "./lib/camera.js";
 import bunny2 from "../web/bunny.js";
 import plane2 from "./models/plane.js";
-import normals from "../web/angle-normals.js";
 import {glMatrix, mat4, vec3} from "../web/gl-matrix.js";
 import {FPSControls} from "./lib/controls.js";
 import {cube as cube2} from "./models/cube.js";
@@ -13,6 +12,8 @@ import {Lights} from "./lib/lights.js";
 import {debugLogger} from "./lib/shame.js";
 import {halfFloatTextureExt, queryTimerExt, textureFloatExt} from "./lib/cap.js";
 import {SpinController} from "./lib/controller.js";
+import {Mesh} from "./lib/mesh.js";
+import {InstancedMesh} from "./lib/instanced_mesh.js";
 debugLogger();
 const loading = {
   manifest: {
@@ -21,6 +22,7 @@ const loading = {
     "emissive.fsh": {type: "text", src: "shaders/emissive.fsh"},
     "pbr.fsh": {type: "text", src: "shaders/pbr.fsh"},
     "pbr_shadow.fsh": {type: "text", src: "shaders/pbr_shadow.fsh"},
+    "pbr_shadow.vsh": {type: "text", src: "shaders/pbr_shadow.vsh"},
     "light_cube.fsh": {type: "text", src: "shaders/light_cube.fsh"},
     "light_cube.vsh": {type: "text", src: "shaders/light_cube.vsh"}
   },
@@ -39,10 +41,10 @@ const main = (assets) => {
   const controls2 = new FPSControls(regl2._gl.canvas);
   const camera2 = createCamera(regl2, controls2, {position: [0, 3, 10]});
   const lights2 = new Lights();
-  lights2.add(true, [20, 20, 10], [-3, 3, -3, 1]);
-  lights2.add(true, [20, 0, 0], [3, 3, 3, 1]);
-  lights2.add(false, [0, 10, 0], [-3, 3, 3, 1]);
-  lights2.add(false, [0, 0, 10], [3, 3, -3, 1]);
+  lights2.add(true, [1, 1, 1], [-3, 3, -3, 1], 5);
+  lights2.add(true, [1, 0, 0], [3, 3, 3, 1], 5);
+  lights2.add(false, [0, 1, 0], [-3, 3, 3, 1], 2);
+  lights2.add(false, [0, 0, 1], [3, 3, -3, 1], 4);
   const lightProps = [];
   lights2.all().forEach((light, i) => {
     if (!light.on)
@@ -84,86 +86,39 @@ const main = (assets) => {
   const oneLightScope = [regl2(lights2.lightUniform(regl2, 0)), regl2(lights2.lightUniform(regl2, 1)), regl2(lights2.lightUniform(regl2, 2)), regl2(lights2.lightUniform(regl2, 3))];
   const shadowDraw = regl2({
     frag: assets["pbr_shadow.fsh"],
-    vert: assets["main.vsh"],
+    vert: assets["pbr_shadow.vsh"],
     cull: {enable: true, face: "back"},
     uniforms: {
       "shadowCubes[0]": lights2.shadowFBO(regl2, 0),
       "shadowCubes[1]": lights2.shadowFBO(regl2, 1),
       "shadowCubes[2]": lights2.shadowFBO(regl2, 2),
-      "shadowCubes[3]": lights2.shadowFBO(regl2, 3)
+      "shadowCubes[3]": lights2.shadowFBO(regl2, 3),
+      ao: 1e-3
     }
   });
-  const ctrl = new SpinController();
+  const ctrl = SpinController;
   const up = [0, 1, 0];
   const scale = 0.2;
   const bunnyProps = [
-    new Model({albedo: [0.55, 0.55, 0.6], metallic: 0.25, roughness: 0.82, ao: 0.05}, [0, 0, 0], scale, 45, up, ctrl),
-    new Model({
-      albedo: [0.69, 0.27, 0.2],
-      metallic: 0.2,
-      roughness: 0.75,
-      ao: 0.05
-    }, [4, 0, 4], scale, -45, up, ctrl),
-    new Model({
-      albedo: [0, 0.5, 0],
-      metallic: 0,
-      roughness: 0.025,
-      ao: 0.05
-    }, [-4, 0, 4], scale, 90, up, ctrl),
-    new Model({
-      albedo: [0, 0.5, 0.9],
-      metallic: 5,
-      roughness: 0.025,
-      ao: 0.05
-    }, [-2, 0, 4], scale, 35, up, ctrl),
-    new Model({
-      albedo: [0.5, 0.5, 0.5],
-      metallic: 5,
-      roughness: 0.025,
-      ao: 0.05
-    }, [-6, 0, -6], scale, 70, up, ctrl),
-    new Model({
-      albedo: [0.5, 0.5, 0.5],
-      metallic: 5,
-      roughness: 0.025,
-      ao: 0.05
-    }, [4, 0, -6], scale, 35, up, ctrl),
-    new Model({
-      albedo: [0.5, 0.5, 0.5],
-      metallic: 5,
-      roughness: 0.025,
-      ao: 0.05
-    }, [6, 0, -5], scale, -43, up, ctrl),
-    new Model({
-      albedo: [0.5, 0.5, 0.5],
-      metallic: 5,
-      roughness: 0.025,
-      ao: 0.05
-    }, [1, 0, -4], scale, -70, up, ctrl)
+    new Model({albedo: [0.55, 0.55, 0.6], metallic: 0.25, roughness: 0.82}, [0, 0, 0], scale, 45, up, new ctrl()),
+    new Model({albedo: [0.69, 0.27, 0.2], metallic: 0.2, roughness: 0.75}, [4, 0, 4], scale, -45, up, new ctrl()),
+    new Model({albedo: [0, 0.5, 0], metallic: 0, roughness: 0.025}, [-4, 0, 4], scale, 90, up, new ctrl()),
+    new Model({albedo: [0, 0.5, 0.9], metallic: 5, roughness: 0.025}, [-2, 0, 4], scale, 35, up, new ctrl()),
+    new Model({albedo: [0.5, 0.5, 0.5], metallic: 0.5, roughness: 0.025}, [-6, 0, -6], scale, 70, up, new ctrl()),
+    new Model({albedo: [0.5, 0.5, 0.5], metallic: 0.5, roughness: 0.025}, [4, 0, -6], scale, 35, up, new ctrl()),
+    new Model({albedo: [1, 1, 1], metallic: 0.75, roughness: 0.125}, [2, 0, 2], scale, 35, up, new ctrl()),
+    new Model({albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025}, [1, 0, -4], scale, -70, up, new ctrl())
   ];
-  const bunnyDraw = regl2({
-    elements: bunny2.cells,
-    attributes: {position: bunny2.positions, normal: normals(bunny2.cells, bunny2.positions)},
-    uniforms: Model.uniforms(regl2)
-  });
-  const planeProps = [
-    new Model({
-      albedo: [0.42, 0.4, 0.38],
-      metallic: 0,
-      roughness: 1,
-      ao: 0.05
-    }, [0, 0, 0], 20, 90, [1, 0, 0])
-  ];
-  const planeDraw = regl2({
-    elements: plane2.indices,
-    attributes: {position: plane2.positions, normal: plane2.normals},
-    uniforms: Model.uniforms(regl2)
-  });
-  const lightBulbDraw = regl2({
-    elements: cube2.indices,
-    attributes: {position: cube2.positions, normal: cube2.normals},
-    uniforms: Model.uniforms(regl2)
-  });
+  const bunnyMesh = new Mesh(bunny2.positions, bunny2.cells);
+  const bunnies = new InstancedMesh(regl2, bunnyMesh, bunnyProps);
+  const bunnyDraw = regl2(bunnies.config({}));
+  const planeProps = [new Model({albedo: [0.3, 0.3, 0.3], metallic: 0.1, roughness: 0.9}, [0, 0, 0], 20)];
+  const planeMesh = new Mesh(plane2.positions, plane2.indices, plane2.normals);
+  const planes = new InstancedMesh(regl2, planeMesh, planeProps);
+  const planeDraw = regl2(planes.config({}));
+  const cubeMesh = new Mesh(cube2.positions, cube2.indices, cube2.normals);
+  const lightsI = new InstancedMesh(regl2, cubeMesh, lightProps);
+  const lightBulbDraw = regl2(lightsI.config({}));
   const allLightScope = regl2(lights2.allUniforms(regl2));
   const emissiveDraw = regl2({
     frag: assets["emissive.fsh"],
@@ -172,21 +127,18 @@ const main = (assets) => {
   });
   const drawCalls = [];
   lights2.lights.forEach((l, i) => {
-    if (l.on) {
+    if (l.on)
       drawCalls.push([drawDepth[i], `lightmap${i}`]);
-    }
   });
   drawCalls.push([shadowDraw, "shadowed"]);
   drawCalls.push([emissiveDraw, "emissive"]);
   const statsWidget = createStatsWidget(drawCalls, regl2);
   let prevTime = 0;
-  regl2.frame(({tick, time, viewportHeight}) => {
+  regl2.frame(({time}) => {
     const deltaTime = time - prevTime;
     prevTime = time;
     statsWidget.update(deltaTime);
-    bunnyProps.forEach((m) => {
-      m.update();
-    });
+    bunnies.update();
     for (let i = 0; i < lights2.all().length; i++) {
       if (!lights2.get(i).on) {
         continue;
@@ -194,21 +146,21 @@ const main = (assets) => {
       oneLightScope[i](() => {
         drawDepth[i](6, () => {
           regl2.clear({depth: 1});
-          bunnyDraw(bunnyProps);
-          planeDraw(planeProps);
+          bunnyDraw();
+          planeDraw();
         });
       });
     }
-    regl2.clear({color: [0, 0, 0, 255], depth: 1});
+    regl2.clear({color: [0.06, 0.06, 0.06, 255], depth: 1});
     camera2(() => {
       allLightScope(() => {
         shadowDraw(() => {
-          bunnyDraw(bunnyProps);
-          planeDraw(planeProps);
+          bunnyDraw();
+          planeDraw();
         });
       });
       emissiveDraw(() => {
-        lightBulbDraw(lightProps);
+        lightBulbDraw();
       });
     });
   });
@@ -226,6 +178,7 @@ const init = function() {
     requestExtensions.push(textureFloatExt());
   }
   requestExtensions.push("oes_vertex_array_object");
+  requestExtensions.push("ANGLE_instanced_arrays");
   return REGL({
     extensions: requestExtensions,
     optionalExtensions: ["oes_texture_float_linear"],
