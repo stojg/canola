@@ -3,7 +3,6 @@ import resl from 'resl'
 import { createCamera } from './lib/camera'
 import bunny from 'bunny'
 import plane from './models/plane'
-import normals from 'angle-normals'
 import { glMatrix, mat4, vec3, vec4 } from 'gl-matrix'
 import { FPSControls } from './lib/controls'
 import { cube } from './models/cube'
@@ -17,6 +16,12 @@ import { Mesh } from './lib/mesh'
 import { InstancedMesh } from './lib/instanced_mesh'
 
 debugLogger()
+
+const seed = (s: number) => () => {
+  s = Math.sin(s) * 10000
+  return s - Math.floor(s)
+}
+const rand = seed(1815)
 
 const loading = {
   manifest: {
@@ -52,6 +57,10 @@ interface MeshAttributes {
 const main = (assets: Record<string, string>) => {
   const regl = init()
 
+  const cubeMesh = new Mesh(cube.positions, cube.indices, cube.normals)
+  const planeMesh = new Mesh(plane.positions, plane.indices, plane.normals)
+  const bunnyMesh = new Mesh(bunny.positions, bunny.cells)
+
   const controls = new FPSControls(regl._gl.canvas as HTMLCanvasElement)
   const camera = createCamera(regl, controls, { position: [0, 3, 10] })
 
@@ -70,7 +79,7 @@ const main = (assets: Record<string, string>) => {
 
   function lightCubeDraw(lightId: number): REGL.DrawConfig {
     const shadowFbo = lights.shadowFBO(regl, lightId)
-    const proj = mat4.perspective(mat4.create(), glMatrix.toRadian(90), 1, 0.1, 15.0)
+    const proj = mat4.perspective(mat4.create(), glMatrix.toRadian(90), 1, 0.5, 15.0)
     return {
       frag: assets['light_cube.fsh'],
       vert: assets['light_cube.vsh'],
@@ -119,38 +128,34 @@ const main = (assets: Record<string, string>) => {
   const ctrl = SpinController
   const up: vec3 = [0, 1, 0]
   const scale = 0.2
+  const y = 0.0
   const bunnyProps = [
-    new Model({ albedo: [0.55, 0.55, 0.6], metallic: 0.25, roughness: 0.82 }, [0, 0, 0], scale, 45, up, new ctrl()),
-    new Model({ albedo: [0.69, 0.27, 0.2], metallic: 0.2, roughness: 0.75 }, [4, 0, 4], scale, -45, up, new ctrl()),
-    new Model({ albedo: [0.0, 0.5, 0.0], metallic: 0.0, roughness: 0.025 }, [-4, 0, 4], scale, 90, up, new ctrl()),
-    new Model({ albedo: [0.0, 0.5, 0.9], metallic: 5, roughness: 0.025 }, [-2, 0, 4], scale, 35, up, new ctrl()),
-    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 0.5, roughness: 0.025 }, [-6, 0, -6], scale, 70, up, new ctrl()),
-    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 0.5, roughness: 0.025 }, [4, 0, -6], scale, 35, up, new ctrl()),
-    new Model({ albedo: [1, 1, 1], metallic: 0.75, roughness: 0.125 }, [2, 0, 2], scale, 35, up, new ctrl()),
-    new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [1, 0, -4], scale, -70, up, new ctrl()),
-    // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [6, 0, -5], scale, -43, up, new ctrl()),
-    // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [-9, 0, -9], scale, -70, up, new ctrl()),
-    // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [-7, 0, -9], scale, -70, up, new ctrl()),
-    // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [-5, 0, -9], scale, -70, up, new ctrl()),
-    // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [-3, 0, -9], scale, -70, up, new ctrl()),
-    // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [-1, 0, -9], scale, -70, up, new ctrl()),
-    // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [1, 0, -9], scale, -70, up, new ctrl()),
-    // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [3, 0, -9], scale, -70, up, new ctrl()),
-    // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [5, 0, -9], scale, -70, up, new ctrl()),
-    // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [7, 0, -9], scale, -70, up, new ctrl()),
-    // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [9, 0, -9], scale, -70, up, new ctrl()),
+    // new Model({ albedo: [0.55, 0.55, 0.6], metallic: 0.25, roughness: 0.82 }, [0, y, 0], scale, 45, up, new ctrl()),
+    // new Model({ albedo: [0.69, 0.27, 0.2], metallic: 0.2, roughness: 0.75 }, [4, y, 4], scale, -45, up, new ctrl()),
+    // new Model({ albedo: [0.0, 0.5, 0.0], metallic: 0.0, roughness: 0.025 }, [-4, y, 4], scale, 90, up, new ctrl()),
+    // new Model({ albedo: [0.0, 0.5, 0.9], metallic: 5, roughness: 0.025 }, [-2, y, 4], scale, 35, up, new ctrl()),
+    // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 0.5, roughness: 0.025 }, [-6, y, -6], scale, 70, up, new ctrl()),
+    // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 0.5, roughness: 0.025 }, [4, y, -6], scale, 35, up, new ctrl()),
+    // new Model({ albedo: [1, 1, 1], metallic: 0.75, roughness: 0.125 }, [2, y, 2], scale, 35, up, new ctrl()),
+    // new Model({ albedo: [0.5, 0.5, 0.5], metallic: 5, roughness: 0.025 }, [1, y, -4], scale, -70, up, new ctrl()),
   ]
 
-  const bunnyMesh = new Mesh(bunny.positions, bunny.cells)
+  const N = 5
+  for (let x = 0; x < N; x++) {
+    for (let z = 0; z < N; z++) {
+      const pos: vec3 = [x * (20 / N) - 8.5, y, z * (20 / N) - 7.5]
+      bunnyProps.push(new Model({ albedo: [rand(), rand(), rand()], metallic: rand(), roughness: rand() }, pos, scale, -43, up, new ctrl()))
+    }
+  }
+
   const bunnies = new InstancedMesh(regl, bunnyMesh, bunnyProps)
   const bunnyDraw = regl(bunnies.config({}))
 
   const planeProps = [new Model({ albedo: [0.3, 0.3, 0.3], metallic: 0.1, roughness: 0.9 }, [0, 0, 0], 20)]
-  const planeMesh = new Mesh(plane.positions, plane.indices, plane.normals)
+
   const planes = new InstancedMesh(regl, planeMesh, planeProps)
   const planeDraw = regl(planes.config({}))
 
-  const cubeMesh = new Mesh(cube.positions, cube.indices, cube.normals)
   const lightsI = new InstancedMesh(regl, cubeMesh, lightProps)
   const lightBulbDraw = regl(lightsI.config({}))
 
