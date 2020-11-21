@@ -2,19 +2,18 @@
 precision highp float;
 
 #define NUM_LIGHTS 4
-#define LIGHT_CUTOFF 0.1
+#define EPSILON 0.0000000001
 #define SHADOW_BIAS 1.1
 
 const float PI = 3.14159265359;
 
-// material uniforms
 // general uniforms
 uniform float ao;
 // light uniforms
 struct Light {
     vec3 color;
     vec4 position;
-    float radius;
+    float intensity;
 };
 uniform Light lights[NUM_LIGHTS];
 uniform samplerCube shadowCubes[NUM_LIGHTS];
@@ -118,16 +117,13 @@ vec3 calcPointLight(vec3 normal, vec3 camDirection, vec3 F0 , Light light, float
     float lightDistance = length(lightDirection);
     vec3 lightColor = light.color;
 
-    // calculate basic attenuation
-    float d = max(lightDistance - light.radius, 0.0);
-    float denom = d/light.radius + 1.0;
-    float attenuation = 1.0 / (denom*denom);
-    // scale and bias attenuation such that: attenuation == 0 at extent of max influence and attenuation == 1 when d == 0
-    attenuation = (attenuation - LIGHT_CUTOFF) / (1.0 - LIGHT_CUTOFF);
-    if (attenuation < 0.0) {
-        return vec3(0);
+    float attenuation = 1.0;
+    if (light.position.w < EPSILON) {
+        vec3 polynomial = vec3(1.0, lightDistance, lightDistance * lightDistance);
+        vec4 vLightAttenuation = vec4(1.0, 0.5, 0.1, light.intensity);
+        attenuation = 1.0 / dot(polynomial,vLightAttenuation.xyz);
+        attenuation *= clamp(1.0 - (lightDistance / vLightAttenuation.w), 0.0, 1.0);
     }
-    attenuation = max(attenuation, 0.0);
 
     vec3 L = normalize(lightDirection);
     vec3 H = normalize(camDirection + L);
