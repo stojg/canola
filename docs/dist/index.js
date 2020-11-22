@@ -85,7 +85,7 @@ const main = (assets) => {
   const scale = 0.2;
   const y = 0;
   const bunnyProps = [];
-  const N = 3;
+  const N = 5;
   for (let x = 0; x < N; x++) {
     for (let z = 0; z < N; z++) {
       const pos = [x * (20 / N) - 6.6, y, z * (20 / N) - 6.6];
