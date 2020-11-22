@@ -31,6 +31,7 @@ varying float Roughness;
 
 vec3 calcPointLight(vec3 normal, vec3 camDirection, vec3 F0 , Light light, float roughness);
 vec3 calcDirLight(vec3 normal, vec3 camDirection, vec3 F0 , Light light, float roughness);
+vec4 getSampleFromArray(int ndx, vec3 uv);
 bool inPointLightShadow(vec3 worldpos, Light light, int ndx);
 
 void main()
@@ -69,17 +70,20 @@ void main()
     gl_FragColor = vec4(color, 1.0);
 }
 
+vec4 getSampleFromArray(int ndx, vec3 uv) {
+    for (int i = 0; i < NUM_POINT_LIGHTS; ++i) {
+        if (i == ndx) {
+            return textureCube(pointLightShadows[i], uv);
+        }
+    }
+    return vec4(1.0, 1.0, 1.0, 1.0);
+}
+
 bool inPointLightShadow(vec3 worldpos, Light light, int ndx) {
     vec3 lightRay = worldpos - light.position.xyz;
     float sqrDist = dot(lightRay, lightRay);
-    vec4 depthSqrDist = vec4(1.0);
-    for (int i = 0; i < NUM_POINT_LIGHTS; ++i) {
-        if (i != ndx) {
-            continue;
-        }
-        return (textureCube(pointLightShadows[i], lightRay).r * SHADOW_BIAS) < sqrDist;
-    }
-    return false;
+    vec4 depthSqrDist = getSampleFromArray(ndx, lightRay);
+    return (depthSqrDist.r * SHADOW_BIAS) < sqrDist;
 }
 
 vec3 fresnelSchlick(float cosTheta, vec3 F0)
