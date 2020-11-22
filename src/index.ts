@@ -17,6 +17,7 @@ import { Lights, PointLight } from './lib/light'
 import { xyz } from './lib/swizzle'
 import deepmerge from 'deepmerge'
 
+// https://emscripten.org/docs/optimizing/Optimizing-WebGL.html
 debugLogger()
 
 const seed = (s: number) => () => {
@@ -63,10 +64,10 @@ const main = (assets: Record<string, string>) => {
 
   const lights = new Lights()
   // lights.push(new DirectionalLight(regl, 1.0,  [1.0, 1.0, 0.8], [-3, 3, -3]))
-  lights.push(new PointLight(regl, 10.0, [1, 1, 0.8], [-3, 3, -3]))
-  lights.push(new PointLight(regl, 0.0, [1, 0, 0], [3, 3, 3]))
-  lights.push(new PointLight(regl, 0, [0, 1, 0], [-3, 3, 3]))
-  lights.push(new PointLight(regl, 0, [0, 0, 1], [3, 3, -3]))
+  lights.push(new PointLight(regl, 300.0, [1, 1, 0.8], [-3, 2, -3], 10))
+  lights.push(new PointLight(regl, 300.0, [1, 0, 0], [3, 2, 3], 10))
+  lights.push(new PointLight(regl, 0.0, [0, 1, 0], [-3, 2, 3], 10))
+  lights.push(new PointLight(regl, 0.0, [0, 0, 1], [3, 2, -3], 10))
 
   const shadowConf = {
     frag: assets['light_cube.fsh'],
@@ -142,11 +143,11 @@ const main = (assets: Record<string, string>) => {
   })
 
   const drawCalls: [REGL.DrawCommand, string][] = []
-  drawCalls.push([mainDraw, 'main'])
-  drawCalls.push([emissiveDraw, 'emissive'])
   shadowCasters.forEach((n, i) => {
     drawCalls.push([n, `drawDepth${i}`])
   })
+  drawCalls.push([mainDraw, 'main'])
+  drawCalls.push([emissiveDraw, 'emissive'])
   const statsWidget = createStatsWidget(drawCalls, regl)
 
   let prevTime = 0.0

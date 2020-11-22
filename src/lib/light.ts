@@ -25,11 +25,10 @@ export class Lights {
       a[`lights[${idx}].intensity`] = l.intensity
       a[`lights[${idx}].position`] = l.position
       a[`lights[${idx}].color`] = l.color
+      a[`lights[${idx}].radius`] = l.radius
+      a[`lights[${idx}].invSqrRadius`] = 1.0 / (l.radius*l.radius)
     })
-    console.log(a)
-    return {
-      uniforms: a,
-    }
+    return { uniforms: a, }
   }
 
   forEach(callbackfn: (value: Light, index: number, array: Light[]) => void, thisArg?: any): void {
@@ -42,22 +41,28 @@ export class Lights {
 }
 
 export class Light {
+  private _radius: number
   protected _shadowFBO: REGL.Resource
   protected _regl: REGL.Regl
   protected _intensity: number
   protected _color: vec3
   protected _position: vec4
 
-  constructor(regl: REGL.Regl, intensity: number, clr: vec3, pos: vec4, fbo?: REGL.Resource) {
+  constructor(regl: REGL.Regl, intensity: number, clr: vec3, pos: vec4, radius? : number, fbo?: REGL.Resource) {
     this._regl = regl
     this._intensity = intensity
     this._color = clr
     this._position = pos
+    this._radius = radius || 0.0
     this._shadowFBO = fbo || regl.framebuffer({})
   }
 
   get on(): boolean {
     return this._intensity > 0.001
+  }
+
+  get radius(): number {
+    return this._radius
   }
 
   get intensity(): number {
@@ -78,6 +83,8 @@ export class Light {
         'light.color': this.color,
         'light.position': this.position,
         'light.intensity': this.intensity,
+        'light.radius': this.radius,
+        'light.invSqrRadius': 1 / ( this.radius*this.radius),
       },
     }
   }
@@ -99,8 +106,8 @@ export class DirectionalLight extends Light {
 
 export class PointLight extends Light {
   _shadowFBO: REGL.FramebufferCube
-  constructor(regl: REGL.Regl, intensity: number, clr: vec3, pos: vec3) {
-    super(regl, intensity, clr, [pos[0], pos[1], pos[2], 0])
+  constructor(regl: REGL.Regl, intensity: number, clr: vec3, pos: vec3, radius: number = 10.0) {
+    super(regl, intensity, clr, [pos[0], pos[1], pos[2], 0], radius)
     this._shadowFBO = regl.framebufferCube({
       radius: POINT_LIGHT_CUBE_MAP_SIZE,
       colorType: 'half float',
@@ -109,12 +116,10 @@ export class PointLight extends Light {
 
   depthDrawConfig(previous: {} = {}) {
     const shadowFbo = this._shadowFBO
-    const proj = mat4.perspective(mat4.create(), glMatrix.toRadian(90), 1, 0.5, 15.0)
+    const proj = mat4.perspective(mat4.create(), glMatrix.toRadian(90), 1, 0.1, this.radius)
     return deepmerge(previous, {
       uniforms: {
-        'light.color': this.color,
         'light.position': this.position,
-        'light.intensity': this.intensity,
         projectionView: (context: REGL.DefaultContext, props: any, batchId: number) => {
           switch (batchId) {
             case 0: // +x right
