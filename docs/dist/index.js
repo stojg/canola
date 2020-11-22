@@ -12,7 +12,7 @@ import {halfFloatTextureExt, queryTimerExt, textureFloatExt} from "./lib/cap.js"
 import {SpinController} from "./lib/controller.js";
 import {Mesh} from "./lib/mesh.js";
 import {InstancedMesh} from "./lib/instanced_mesh.js";
-import {Lights, PointLight} from "./lib/light.js";
+import {DirectionalLight, Lights, PointLight} from "./lib/light.js";
 import {xyz} from "./lib/swizzle.js";
 debugLogger();
 const seed = (s) => () => {
@@ -28,7 +28,9 @@ let toLoad = {
   "pbr_shadow.fsh": {type: "text", src: "shaders/pbr_shadow.fsh"},
   "pbr_shadow.vsh": {type: "text", src: "shaders/pbr_shadow.vsh"},
   "light_cube.fsh": {type: "text", src: "shaders/light_cube.fsh"},
-  "light_cube.vsh": {type: "text", src: "shaders/light_cube.vsh"}
+  "light_cube.vsh": {type: "text", src: "shaders/light_cube.vsh"},
+  "shadow_dir.vsh": {type: "text", src: "shaders/shadow_dir.vsh"},
+  "shadow_dir.fsh": {type: "text", src: "shaders/shadow_dir.fsh"}
 };
 toLoad = Object.assign(toLoad);
 const loading = {
@@ -51,28 +53,32 @@ const main = (assets) => {
   const controls2 = new FPSControls(regl2._gl.canvas);
   const camera2 = createCamera(regl2, controls2, {position: [0, 3, 10]});
   const lights = new Lights();
-  lights.push(new PointLight(regl2, 10, [1, 1, 0.8], [-3, 3, -3]));
-  lights.push(new PointLight(regl2, 0, [1, 0, 0], [3, 3, 3]));
-  lights.push(new PointLight(regl2, 0, [0, 1, 0], [-3, 3, 3]));
-  lights.push(new PointLight(regl2, 0, [0, 0, 1], [3, 3, -3]));
-  const shadowConf = {
-    frag: assets["light_cube.fsh"],
-    vert: assets["light_cube.vsh"],
-    cull: {enable: true, face: "back"}
-  };
+  lights.push(new DirectionalLight(regl2, 6, [1, 1, 0.5], [-1, 1, 1]));
+  lights.push(new PointLight(regl2, 300, [1, 1, 0.8], [-3, 2, -3], 10));
+  lights.push(new PointLight(regl2, 300, [1, 0, 0], [3, 2, 3], 10));
+  lights.push(new PointLight(regl2, 0, [0, 1, 0], [-3, 2, 3], 10));
+  lights.push(new PointLight(regl2, 0, [0, 0, 1], [3, 2, -3], 10));
   let mainConfig = {
     vert: assets["pbr_shadow.vsh"],
     frag: assets["pbr_shadow.fsh"],
     cull: {enable: true, face: "back"},
     uniforms: {ao: 1e-3}
   };
-  const shadowCasters = [];
-  lights.forEach((l, i) => {
-    if (l.on) {
-      shadowCasters.push(regl2(l.depthDrawConfig(shadowConf)));
-    }
-    mainConfig.uniforms[`shadowCubes[${i}]`] = lights.get(i).shadowFBO();
-  });
+  const pointShadowConf = {
+    frag: assets["light_cube.fsh"],
+    vert: assets["light_cube.vsh"],
+    cull: {enable: true, face: "back"}
+  };
+  const pLightShadowDraws = [];
+  lights.pointLightSetup(pLightShadowDraws, mainConfig, pointShadowConf);
+  const dirShadowConf = {
+    frag: assets["shadow_dir.fsh"],
+    vert: assets["shadow_dir.vsh"],
+    cull: {enable: true, face: "back"},
+    uniforms: {ao: 1e-3}
+  };
+  const dirLightShadows = [];
+  lights.dirLightSetup(dirLightShadows, mainConfig, dirShadowConf);
   const mainDraw = regl2(mainConfig);
   const ctrl = SpinController;
   const up = [0, 1, 0];
@@ -110,11 +116,11 @@ const main = (assets) => {
     cull: {enable: true, face: "back"}
   });
   const drawCalls = [];
-  drawCalls.push([mainDraw, "main"]);
-  drawCalls.push([emissiveDraw, "emissive"]);
-  shadowCasters.forEach((n, i) => {
+  pLightShadowDraws.forEach((n, i) => {
     drawCalls.push([n, `drawDepth${i}`]);
   });
+  drawCalls.push([mainDraw, "main"]);
+  drawCalls.push([emissiveDraw, "emissive"]);
   const statsWidget = createStatsWidget(drawCalls, regl2);
   let prevTime = 0;
   regl2.frame(({time}) => {
@@ -122,7 +128,7 @@ const main = (assets) => {
     prevTime = time;
     statsWidget.update(deltaTime);
     bunnies.update();
-    shadowCasters.forEach((cmd) => {
+    pLightShadowDraws.forEach((cmd) => {
       cmd(6, () => {
         regl2.clear({depth: 1});
         bunnyDraw();

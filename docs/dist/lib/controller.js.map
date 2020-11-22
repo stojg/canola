@@ -1,7 +1,7 @@
 {
   "version": 3,
   "sources": ["/Users/stojg/Sites/canola/src/lib/controller.ts"],
-  "sourcesContent": ["import type { Model } from './model'\nimport { glMatrix, mat4, quat } from 'gl-matrix'\n\nexport interface Controller {\n  update(m: Model): void\n}\n\nexport class NullController implements Controller {\n  update(m: Model) {}\n}\n\nexport class SpinController implements Controller {\n  speed = 0.0\n\n  constructor() {\n    this.speed = (Math.random() - 0.5) * 5\n  }\n\n  update(m: Model) {\n    const transform: mat4 = mat4.clone(m.model)\n\n    // Pitch Locally, Yaw Globally\n    mat4.rotateY(transform, transform, glMatrix.toRadian(this.speed))\n\n    m.model = transform\n  }\n}\n"],
+  "sourcesContent": ["import type { Model } from './model'\nimport { glMatrix, mat4 } from 'gl-matrix'\n\nexport interface Controller {\n  update(m: Model): void\n}\n\nexport class NullController implements Controller {\n  update(m: Model) {}\n}\n\nexport class SpinController implements Controller {\n  speed = 0.0\n\n  constructor() {\n    this.speed = (Math.random() - 0.5) * 5\n  }\n\n  update(m: Model) {\n    const transform: mat4 = mat4.clone(m.model)\n\n    // Pitch Locally, Yaw Globally\n    mat4.rotateY(transform, transform, glMatrix.toRadian(this.speed))\n\n    m.model = transform\n  }\n}\n"],
   "mappings": "AACA;AADA;AAAA,EAQE,OAAO;AAAA;AAAA;AART;AAAA,EAcE;AAFA,iBAAQ;AAGN,SAAK,QAAS,MAAK,WAAW,OAAO;AAAA;AAAA,EAGvC;AACE,sBAAwB,KAAK,MAAM,EAAE;AAGrC,SAAK,QAAQ,WAAW,WAAW,SAAS,SAAS,KAAK;AAE1D,MAAE,QAAQ;AAAA;AAAA;",
   "names": []
 }
