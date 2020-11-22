@@ -13,9 +13,8 @@ import { halfFloatTextureExt, queryTimerExt, textureFloatExt } from './lib/cap'
 import { SpinController } from './lib/controller'
 import { Mesh } from './lib/mesh'
 import { InstancedMesh } from './lib/instanced_mesh'
-import { Lights, PointLight } from './lib/light'
+import { DirectionalLight, Lights, PointLight } from './lib/light'
 import { xyz } from './lib/swizzle'
-import deepmerge from 'deepmerge'
 
 // https://emscripten.org/docs/optimizing/Optimizing-WebGL.html
 debugLogger()
@@ -36,6 +35,8 @@ let toLoad = {
   'pbr_shadow.vsh': { type: 'text', src: 'shaders/pbr_shadow.vsh' },
   'light_cube.fsh': { type: 'text', src: 'shaders/light_cube.fsh' },
   'light_cube.vsh': { type: 'text', src: 'shaders/light_cube.vsh' },
+  'shadow_dir.vsh': { type: 'text', src: 'shaders/shadow_dir.vsh' },
+  'shadow_dir.fsh': { type: 'text', src: 'shaders/shadow_dir.fsh' },
 }
 
 toLoad = Object.assign(toLoad)
@@ -63,32 +64,35 @@ const main = (assets: Record<string, string>) => {
   const camera = createCamera(regl, controls, { position: [0, 3, 10] })
 
   const lights = new Lights()
-  // lights.push(new DirectionalLight(regl, 1.0,  [1.0, 1.0, 0.8], [-3, 3, -3]))
+  lights.push(new DirectionalLight(regl, 6.0, [1.0, 1.0, 0.5], [-1, 1, 1]))
   lights.push(new PointLight(regl, 300.0, [1, 1, 0.8], [-3, 2, -3], 10))
   lights.push(new PointLight(regl, 300.0, [1, 0, 0], [3, 2, 3], 10))
   lights.push(new PointLight(regl, 0.0, [0, 1, 0], [-3, 2, 3], 10))
   lights.push(new PointLight(regl, 0.0, [0, 0, 1], [3, 2, -3], 10))
 
-  const shadowConf = {
-    frag: assets['light_cube.fsh'],
-    vert: assets['light_cube.vsh'],
-    cull: { enable: true, face: 'back' },
-  }
   let mainConfig: REGL.DrawConfig = {
     vert: assets['pbr_shadow.vsh'],
     frag: assets['pbr_shadow.fsh'],
-    cull: { enable: true, face: 'back' },
+    cull: { enable: true, face: 'back' as REGL.FaceOrientationType },
     uniforms: { ao: 0.001 },
   }
 
-  const shadowCasters: REGL.DrawCommand[] = []
-  lights.forEach((l, i) => {
-    if (l.on) {
-      shadowCasters.push(regl(l.depthDrawConfig(shadowConf)))
-    }
-    // @ts-ignore
-    mainConfig.uniforms[`shadowCubes[${i}]`] = lights.get(i).shadowFBO()
-  })
+  const pointShadowConf = {
+    frag: assets['light_cube.fsh'],
+    vert: assets['light_cube.vsh'],
+    cull: { enable: true, face: 'back' as REGL.FaceOrientationType },
+  }
+  const pLightShadowDraws: REGL.DrawCommand[] = []
+  lights.pointLightSetup(pLightShadowDraws, mainConfig, pointShadowConf)
+
+  const dirShadowConf = {
+    frag: assets['shadow_dir.fsh'],
+    vert: assets['shadow_dir.vsh'],
+    cull: { enable: true, face: 'back' as REGL.FaceOrientationType },
+    uniforms: { ao: 0.001 },
+  }
+  const dirLightShadows: REGL.DrawCommand[] = []
+  lights.dirLightSetup(dirLightShadows, mainConfig, dirShadowConf)
 
   const mainDraw = regl(mainConfig)
 
@@ -143,7 +147,7 @@ const main = (assets: Record<string, string>) => {
   })
 
   const drawCalls: [REGL.DrawCommand, string][] = []
-  shadowCasters.forEach((n, i) => {
+  pLightShadowDraws.forEach((n, i) => {
     drawCalls.push([n, `drawDepth${i}`])
   })
   drawCalls.push([mainDraw, 'main'])
@@ -158,7 +162,7 @@ const main = (assets: Record<string, string>) => {
 
     bunnies.update()
 
-    shadowCasters.forEach((cmd) => {
+    pLightShadowDraws.forEach((cmd) => {
       cmd(6, () => {
         regl.clear({ depth: 1 })
         bunnyDraw()

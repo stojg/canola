@@ -1,5 +1,5 @@
 import type { Model } from './model'
-import { glMatrix, mat4, quat } from 'gl-matrix'
+import { glMatrix, mat4 } from 'gl-matrix'
 
 export interface Controller {
   update(m: Model): void
