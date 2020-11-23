@@ -1,4 +1,3 @@
-//#extension GL_EXT_draw_buffers : require
 #ifdef GL_FRAGMENT_PRECISION_HIGH
 precision highp float;
 #else
@@ -68,12 +67,6 @@ void main()
     vec3 color = ambient + Lo;
 
     gl_FragData[0] = vec4(color, 1.0);
-
-//    const float brightnessMin = 30.0;
-//    const float brightnessMax = 300.0;
-//    float luminance = dot(color.rgb, vec3(0.2126, 0.7152, 0.0722));
-//    vec3 bloom = color.rgb * smoothstep(brightnessMin, brightnessMax, luminance);
-//    gl_FragData[1] = vec4(bloom, 1.0);
 }
 
 vec4 getSampleFromArray(int ndx, vec3 uv) {

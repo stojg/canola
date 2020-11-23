@@ -58,20 +58,11 @@ const loading = {
 
 const main = (assets: Record<string, string>) => {
   const regl = init()
-  // create fbo. We set the size in `regl.frame`
-  // @ts-ignore
-  // const fbo = regl.framebuffer({
-  //   color: [
-  //     regl.texture({ width: 1, height: 1, wrap: 'clamp', format: 'rgba', type: 'half float'}), // main
-  //     regl.texture({ width: 1, height: 1, wrap: 'clamp', format: 'rgba', type: 'half float'}), // brightness
-  //   ],
-  //   depth: true,
-  //   stencil: false
-  // })
+
   const fbo = regl.framebuffer({
-    color: regl.texture({ width: 1, height: 1, wrap: 'clamp', format: 'rgba', type: 'half float'}), // main
+    color: regl.texture({ width: 1, height: 1, wrap: 'clamp', format: 'rgba', type: 'half float' }), // main
     depth: true,
-    stencil: false
+    stencil: false,
   })
 
   const cubeMesh = new Mesh(cube.positions, cube.indices, cube.normals)
@@ -165,15 +156,12 @@ const main = (assets: Record<string, string>) => {
   const lightBulbDraw = regl(lightsI.config({}))
   const lightScope = regl(lights.config())
 
-
   const drawToneMap = regl({
     frag: assets['tonemap.fsh'],
     vert: assets['screen.vsh'],
-    attributes: { position: [ -4, -4, 4, -4, 0, 4 ] },
-    // @ts-ignore
+    attributes: { position: [-4, -4, 4, -4, 0, 4] },
     uniforms: {
-      tex: fbo.color[0],
-      // blur: pingpongFBOs[1]
+      tex: fbo,
     },
     depth: { enable: false },
     count: 3,
@@ -185,12 +173,11 @@ const main = (assets: Record<string, string>) => {
   })
   drawCalls.push([mainDraw, 'main'])
   drawCalls.push([emissiveDraw, 'emissive'])
-  // drawCalls.push([drawBlurMap, 'blur'])
   drawCalls.push([drawToneMap, 'tone_map'])
   const statsWidget = createStatsWidget(drawCalls, regl)
 
   let prevTime = 0.0
-  regl.frame(({ time,viewportWidth,viewportHeight }) => {
+  regl.frame(({ time, viewportWidth, viewportHeight }) => {
     const deltaTime = time - prevTime
     prevTime = time
     statsWidget.update(deltaTime)
@@ -211,7 +198,7 @@ const main = (assets: Record<string, string>) => {
       lightScope(() => {
         mainDraw(() => {
           // clear the fbo from last time
-          regl.clear({ color: [0.00, 0.00, 0.00, 255], depth: 1 })
+          regl.clear({ color: [0.0, 0.0, 0.0, 255], depth: 1 })
           bunnyDraw()
           planeDraw()
         })
@@ -220,8 +207,6 @@ const main = (assets: Record<string, string>) => {
         lightBulbDraw()
       })
     })
-
-    // drawBlurMap(blurProps)
 
     drawToneMap()
   })

@@ -1,4 +1,3 @@
-
 // need this on top of shaders writing to the fbo.color[1] //#extension GL_EXT_draw_buffers : require
 
 // dual fbo target textures
@@ -40,7 +39,6 @@
 //   count: 3,
 //   framebuffer: (context: REGL.DefaultContext, props: any) => props.out,
 // })
-
 
 // happens before draw
 // pingpongFBOs[0].resize(viewportWidth/1, viewportHeight/1)

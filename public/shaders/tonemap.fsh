@@ -6,12 +6,9 @@ precision mediump float;
 
 varying vec2 uv;
 uniform sampler2D tex;
-//uniform sampler2D blur;
 
 void main() {
     vec3 color = texture2D(tex, uv).rgb;
-//    vec3 bloomColor = texture2D(blur, uv).rgb;
-//    color = color + bloomColor;
     // reinhard
     color = color / (color + vec3(1.0));
     // gamma
