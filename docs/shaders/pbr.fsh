@@ -1,5 +1,8 @@
-// needs to be highp for mobile devices HDR
+#ifdef GL_FRAGMENT_PRECISION_HIGH
 precision highp float;
+#else
+precision mediump float;
+#endif
 
 #define NUM_LIGHTS 4
 #define LIGHT_CUTOFF 0.001

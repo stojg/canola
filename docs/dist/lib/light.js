@@ -1,8 +1,7 @@
 import {glMatrix, mat4, vec3} from "../../web/gl-matrix.js";
 import deepmerge2 from "../../web/deepmerge.js";
 import {xyz} from "./swizzle.js";
-const POINT_LIGHT_CUBE_MAP_SIZE = 512;
-const BLACK = vec3.fromValues(0, 0, 0);
+const POINT_LIGHT_CUBE_MAP_SIZE = 256;
 export class Lights {
   constructor() {
     this.lights = [];

@@ -3,6 +3,7 @@ import resl2 from "../web/resl.js";
 import {createCamera} from "./lib/camera.js";
 import bunny2 from "../web/bunny.js";
 import plane2 from "./models/plane.js";
+import {vec3} from "../web/gl-matrix.js";
 import {FPSControls} from "./lib/controls.js";
 import {cube as cube2} from "./models/cube.js";
 import {createStatsWidget} from "./ui/stats-widget.js";
@@ -21,6 +22,7 @@ const seed = (s) => () => {
 };
 const rand = seed(1815);
 let toLoad = {
+  "blur.fsh": {type: "text", src: "shaders/blur.fsh"},
   "main.fsh": {type: "text", src: "shaders/main.fsh"},
   "main.vsh": {type: "text", src: "shaders/main.vsh"},
   "emissive.fsh": {type: "text", src: "shaders/emissive.fsh"},
@@ -30,7 +32,9 @@ let toLoad = {
   "light_cube.fsh": {type: "text", src: "shaders/light_cube.fsh"},
   "light_cube.vsh": {type: "text", src: "shaders/light_cube.vsh"},
   "shadow_dir.vsh": {type: "text", src: "shaders/shadow_dir.vsh"},
-  "shadow_dir.fsh": {type: "text", src: "shaders/shadow_dir.fsh"}
+  "shadow_dir.fsh": {type: "text", src: "shaders/shadow_dir.fsh"},
+  "tonemap.fsh": {type: "text", src: "shaders/tonemap.fsh"},
+  "screen.vsh": {type: "text", src: "shaders/screen.vsh"}
 };
 toLoad = Object.assign(toLoad);
 const loading = {
@@ -47,6 +51,11 @@ const loading = {
 };
 const main = (assets) => {
   const regl2 = init();
+  const fbo = regl2.framebuffer({
+    color: regl2.texture({width: 1, height: 1, wrap: "clamp", format: "rgba", type: "half float"}),
+    depth: true,
+    stencil: false
+  });
   const cubeMesh = new Mesh(cube2.positions, cube2.indices, cube2.normals);
   const planeMesh = new Mesh(plane2.positions, plane2.indices, plane2.normals);
   const bunnyMesh = new Mesh(bunny2.positions, bunny2.cells);
@@ -62,8 +71,15 @@ const main = (assets) => {
     vert: assets["pbr_shadow.vsh"],
     frag: assets["pbr_shadow.fsh"],
     cull: {enable: true, face: "back"},
-    uniforms: {ao: 1e-3}
+    uniforms: {ao: 1e-3},
+    framebuffer: fbo
   };
+  const emissiveDraw = regl2({
+    frag: assets["emissive.fsh"],
+    vert: assets["main.vsh"],
+    cull: {enable: true, face: "back"},
+    framebuffer: fbo
+  });
   const pointShadowConf = {
     frag: assets["light_cube.fsh"],
     vert: assets["light_cube.vsh"],
@@ -96,24 +112,29 @@ const main = (assets) => {
       }, pos, scale, -43, up, new ctrl()));
     }
   }
-  const bunnies = new InstancedMesh(regl2, bunnyMesh, bunnyProps);
-  const bunnyDraw = regl2(bunnies.config({}));
-  const planeProps = [new Model({albedo: [0.3, 0.3, 0.3], metallic: 0.1, roughness: 0.9}, [0, 0, 0], 20)];
-  const planes = new InstancedMesh(regl2, planeMesh, planeProps);
+  const bunnyModels = new InstancedMesh(regl2, bunnyMesh, bunnyProps);
+  const bunnyDraw = regl2(bunnyModels.config({}));
+  const planeModels = [new Model({albedo: [0.3, 0.3, 0.3], metallic: 0.1, roughness: 0.9}, [0, 0, 0], 20)];
+  const planes = new InstancedMesh(regl2, planeMesh, planeModels);
   const planeDraw = regl2(planes.config({}));
   const lightProps = [];
   lights.forEach((light2, i) => {
     if (light2.on && light2 instanceof PointLight) {
-      lightProps.push(new Model({albedo: light2.color, metallic: 0, roughness: 0.025}, xyz(light2.position), 0.05));
+      lightProps.push(new Model({albedo: vec3.scale(vec3.create(), light2.color, 10), metallic: 0, roughness: 0.025}, xyz(light2.position), 0.05));
     }
   });
   const lightsI = new InstancedMesh(regl2, cubeMesh, lightProps);
   const lightBulbDraw = regl2(lightsI.config({}));
   const lightScope = regl2(lights.config());
-  const emissiveDraw = regl2({
-    frag: assets["emissive.fsh"],
-    vert: assets["main.vsh"],
-    cull: {enable: true, face: "back"}
+  const drawToneMap = regl2({
+    frag: assets["tonemap.fsh"],
+    vert: assets["screen.vsh"],
+    attributes: {position: [-4, -4, 4, -4, 0, 4]},
+    uniforms: {
+      tex: fbo
+    },
+    depth: {enable: false},
+    count: 3
   });
   const drawCalls = [];
   pLightShadowDraws.forEach((n, i) => {
@@ -121,13 +142,15 @@ const main = (assets) => {
   });
   drawCalls.push([mainDraw, "main"]);
   drawCalls.push([emissiveDraw, "emissive"]);
+  drawCalls.push([drawToneMap, "tone_map"]);
   const statsWidget = createStatsWidget(drawCalls, regl2);
   let prevTime = 0;
-  regl2.frame(({time}) => {
+  regl2.frame(({time, viewportWidth, viewportHeight}) => {
     const deltaTime = time - prevTime;
     prevTime = time;
     statsWidget.update(deltaTime);
-    bunnies.update();
+    bunnyModels.update();
+    fbo.resize(viewportWidth, viewportHeight);
     pLightShadowDraws.forEach((cmd) => {
       cmd(6, () => {
         regl2.clear({depth: 1});
@@ -135,10 +158,10 @@ const main = (assets) => {
         planeDraw();
       });
     });
-    regl2.clear({color: [0.06, 0.06, 0.06, 255], depth: 1});
     camera2(() => {
       lightScope(() => {
         mainDraw(() => {
+          regl2.clear({color: [0, 0, 0, 255], depth: 1});
           bunnyDraw();
           planeDraw();
         });
@@ -147,6 +170,7 @@ const main = (assets) => {
         lightBulbDraw();
       });
     });
+    drawToneMap();
   });
 };
 const init = function() {
@@ -164,9 +188,9 @@ const init = function() {
   requestExtensions.push("ANGLE_instanced_arrays");
   return REGL({
     extensions: requestExtensions,
-    optionalExtensions: ["oes_texture_float_linear"],
+    optionalExtensions: ["oes_texture_float_linear", "webgl_draw_buffers"],
     profile: true,
-    attributes: {antialias: true}
+    attributes: {antialias: false}
   });
 };
 resl2(loading);

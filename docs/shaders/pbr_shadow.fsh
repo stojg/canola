@@ -1,4 +1,8 @@
+#ifdef GL_FRAGMENT_PRECISION_HIGH
 precision highp float;
+#else
+precision mediump float;
+#endif
 
 #define NUM_POINT_LIGHTS 4
 #define EPSILON 0.0000000001
@@ -62,12 +66,7 @@ void main()
     vec3 ambient = Albedo * ao;
     vec3 color = ambient + Lo;
 
-    // reinhart
-     color = color / (color + vec3(1.0));
-    //gamma
-    color = pow(color, vec3(1.0/2.2));
-
-    gl_FragColor = vec4(color, 1.0);
+    gl_FragData[0] = vec4(color, 1.0);
 }
 
 vec4 getSampleFromArray(int ndx, vec3 uv) {
