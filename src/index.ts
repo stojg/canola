@@ -3,7 +3,7 @@ import resl from 'resl'
 import { createCamera } from './lib/camera'
 import bunny from 'bunny'
 import plane from './models/plane'
-import type { vec3 } from 'gl-matrix'
+import { vec3 } from 'gl-matrix'
 import { FPSControls } from './lib/controls'
 import { cube } from './models/cube'
 import { createStatsWidget } from './ui/stats-widget'
@@ -37,6 +37,8 @@ let toLoad = {
   'light_cube.vsh': { type: 'text', src: 'shaders/light_cube.vsh' },
   'shadow_dir.vsh': { type: 'text', src: 'shaders/shadow_dir.vsh' },
   'shadow_dir.fsh': { type: 'text', src: 'shaders/shadow_dir.fsh' },
+  'tonemap.fsh': { type: 'text', src: 'shaders/tonemap.fsh' },
+  'tonemap.vsh': { type: 'text', src: 'shaders/tonemap.vsh' },
 }
 
 toLoad = Object.assign(toLoad)
@@ -56,11 +58,23 @@ const loading = {
 const main = (assets: Record<string, string>) => {
   const regl = init()
 
+  // create fbo. We set the size in `regl.frame`
+  const fbo = regl.framebuffer({
+    color: regl.texture({
+      width: 1,
+      height: 1,
+      wrap: 'clamp',
+      format: 'rgba',
+      type: textureFloatExt() ? 'float' : 'half float'
+    }),
+    depth: true
+  })
+
   const cubeMesh = new Mesh(cube.positions, cube.indices, cube.normals)
   const planeMesh = new Mesh(plane.positions, plane.indices, plane.normals)
   const bunnyMesh = new Mesh(bunny.positions, bunny.cells)
-
   const controls = new FPSControls(regl._gl.canvas as HTMLCanvasElement)
+
   const camera = createCamera(regl, controls, { position: [0, 3, 10] })
 
   const lights = new Lights()
@@ -75,7 +89,15 @@ const main = (assets: Record<string, string>) => {
     frag: assets['pbr_shadow.fsh'],
     cull: { enable: true, face: 'back' as REGL.FaceOrientationType },
     uniforms: { ao: 0.001 },
+    framebuffer: fbo,
   }
+
+  const emissiveDraw = regl({
+    frag: assets['emissive.fsh'],
+    vert: assets['main.vsh'],
+    cull: { enable: true, face: 'back' },
+    framebuffer: fbo,
+  })
 
   const pointShadowConf = {
     frag: assets['light_cube.fsh'],
@@ -122,17 +144,16 @@ const main = (assets: Record<string, string>) => {
       )
     }
   }
-
-  const bunnies = new InstancedMesh(regl, bunnyMesh, bunnyProps)
-  const bunnyDraw = regl(bunnies.config({}))
-  const planeProps = [new Model({ albedo: [0.3, 0.3, 0.3], metallic: 0.1, roughness: 0.9 }, [0, 0, 0], 20)]
-  const planes = new InstancedMesh(regl, planeMesh, planeProps)
+  const bunnyModels = new InstancedMesh(regl, bunnyMesh, bunnyProps)
+  const bunnyDraw = regl(bunnyModels.config({}))
+  const planeModels = [new Model({ albedo: [0.3, 0.3, 0.3], metallic: 0.1, roughness: 0.9 }, [0, 0, 0], 20)]
+  const planes = new InstancedMesh(regl, planeMesh, planeModels)
   const planeDraw = regl(planes.config({}))
 
   const lightProps: Model[] = []
   lights.forEach((light, i) => {
     if (light.on && light instanceof PointLight) {
-      lightProps.push(new Model({ albedo: light.color, metallic: 0, roughness: 0.025 }, xyz(light.position), 0.05))
+      lightProps.push(new Model({ albedo: vec3.scale(vec3.create(), light.color, light.intensity), metallic: 0, roughness: 0.025 }, xyz(light.position), 0.05))
     }
   })
 
@@ -140,10 +161,13 @@ const main = (assets: Record<string, string>) => {
   const lightBulbDraw = regl(lightsI.config({}))
   const lightScope = regl(lights.config())
 
-  const emissiveDraw = regl({
-    frag: assets['emissive.fsh'],
-    vert: assets['main.vsh'],
-    cull: { enable: true, face: 'back' },
+  const drawToneMap = regl({
+    frag: assets['tonemap.fsh'],
+    vert: assets['tonemap.vsh'],
+    attributes: { position: [ -4, -4, 4, -4, 0, 4 ] },
+    uniforms: { tex: () => fbo },
+    depth: { enable: false },
+    count: 3,
   })
 
   const drawCalls: [REGL.DrawCommand, string][] = []
@@ -152,15 +176,16 @@ const main = (assets: Record<string, string>) => {
   })
   drawCalls.push([mainDraw, 'main'])
   drawCalls.push([emissiveDraw, 'emissive'])
+  drawCalls.push([drawToneMap, 'tone_map'])
   const statsWidget = createStatsWidget(drawCalls, regl)
 
   let prevTime = 0.0
-  regl.frame(({ time }) => {
+  regl.frame(({ time,viewportWidth,viewportHeight }) => {
     const deltaTime = time - prevTime
     prevTime = time
     statsWidget.update(deltaTime)
 
-    bunnies.update()
+    bunnyModels.update()
 
     pLightShadowDraws.forEach((cmd) => {
       cmd(6, () => {
@@ -170,10 +195,11 @@ const main = (assets: Record<string, string>) => {
       })
     })
 
-    regl.clear({ color: [0.06, 0.06, 0.06, 255], depth: 1 })
+    fbo.resize(viewportWidth, viewportHeight)
     camera(() => {
       lightScope(() => {
         mainDraw(() => {
+          regl.clear({ color: [0.06, 0.06, 0.06, 255], depth: 1 })
           bunnyDraw()
           planeDraw()
         })
@@ -182,6 +208,8 @@ const main = (assets: Record<string, string>) => {
         lightBulbDraw()
       })
     })
+
+    drawToneMap()
   })
 }
 
@@ -202,7 +230,7 @@ const init = function (): REGL.Regl {
     extensions: requestExtensions,
     optionalExtensions: ['oes_texture_float_linear'],
     profile: true,
-    attributes: { antialias: true },
+    attributes: { antialias: false },
   })
 }
 
