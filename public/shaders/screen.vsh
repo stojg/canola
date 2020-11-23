@@ -1,4 +1,4 @@
-precision highp float;
+precision lowp float;
 attribute vec2 position;
 varying vec2 uv;
 void main() {

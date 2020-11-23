@@ -3,14 +3,7 @@ import type REGL from 'regl'
 import deepmerge from 'deepmerge'
 import { xyz } from './swizzle'
 
-// shadowFBOs: REGL.FramebufferCube[] = []
-// this.shadowFBOs[id] = regl.framebufferCube({
-//   radius: CUBE_MAP_SIZE,
-//   colorType: 'half float',
-// })
-
-const POINT_LIGHT_CUBE_MAP_SIZE = 512
-const BLACK = vec3.fromValues(0, 0, 0)
+const POINT_LIGHT_CUBE_MAP_SIZE = 256
 
 export class Lights {
   lights: Light[] = []

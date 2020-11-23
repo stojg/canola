@@ -27,6 +27,7 @@ const rand = seed(1815)
 
 let toLoad = {
   // Each entry in the manifest represents an asset to be loaded
+  'blur.fsh': { type: 'text', src: 'shaders/blur.fsh' },
   'main.fsh': { type: 'text', src: 'shaders/main.fsh' },
   'main.vsh': { type: 'text', src: 'shaders/main.vsh' },
   'emissive.fsh': { type: 'text', src: 'shaders/emissive.fsh' },
@@ -38,7 +39,7 @@ let toLoad = {
   'shadow_dir.vsh': { type: 'text', src: 'shaders/shadow_dir.vsh' },
   'shadow_dir.fsh': { type: 'text', src: 'shaders/shadow_dir.fsh' },
   'tonemap.fsh': { type: 'text', src: 'shaders/tonemap.fsh' },
-  'tonemap.vsh': { type: 'text', src: 'shaders/tonemap.vsh' },
+  'screen.vsh': { type: 'text', src: 'shaders/screen.vsh' },
 }
 
 toLoad = Object.assign(toLoad)
@@ -57,17 +58,20 @@ const loading = {
 
 const main = (assets: Record<string, string>) => {
   const regl = init()
-
   // create fbo. We set the size in `regl.frame`
+  // @ts-ignore
+  // const fbo = regl.framebuffer({
+  //   color: [
+  //     regl.texture({ width: 1, height: 1, wrap: 'clamp', format: 'rgba', type: 'half float'}), // main
+  //     regl.texture({ width: 1, height: 1, wrap: 'clamp', format: 'rgba', type: 'half float'}), // brightness
+  //   ],
+  //   depth: true,
+  //   stencil: false
+  // })
   const fbo = regl.framebuffer({
-    color: regl.texture({
-      width: 1,
-      height: 1,
-      wrap: 'clamp',
-      format: 'rgba',
-      type: textureFloatExt() ? 'float' : 'half float'
-    }),
-    depth: true
+    color: regl.texture({ width: 1, height: 1, wrap: 'clamp', format: 'rgba', type: 'half float'}), // main
+    depth: true,
+    stencil: false
   })
 
   const cubeMesh = new Mesh(cube.positions, cube.indices, cube.normals)
@@ -153,7 +157,7 @@ const main = (assets: Record<string, string>) => {
   const lightProps: Model[] = []
   lights.forEach((light, i) => {
     if (light.on && light instanceof PointLight) {
-      lightProps.push(new Model({ albedo: vec3.scale(vec3.create(), light.color, light.intensity), metallic: 0, roughness: 0.025 }, xyz(light.position), 0.05))
+      lightProps.push(new Model({ albedo: vec3.scale(vec3.create(), light.color, 10), metallic: 0, roughness: 0.025 }, xyz(light.position), 0.05))
     }
   })
 
@@ -161,11 +165,16 @@ const main = (assets: Record<string, string>) => {
   const lightBulbDraw = regl(lightsI.config({}))
   const lightScope = regl(lights.config())
 
+
   const drawToneMap = regl({
     frag: assets['tonemap.fsh'],
-    vert: assets['tonemap.vsh'],
+    vert: assets['screen.vsh'],
     attributes: { position: [ -4, -4, 4, -4, 0, 4 ] },
-    uniforms: { tex: () => fbo },
+    // @ts-ignore
+    uniforms: {
+      tex: fbo.color[0],
+      // blur: pingpongFBOs[1]
+    },
     depth: { enable: false },
     count: 3,
   })
@@ -176,6 +185,7 @@ const main = (assets: Record<string, string>) => {
   })
   drawCalls.push([mainDraw, 'main'])
   drawCalls.push([emissiveDraw, 'emissive'])
+  // drawCalls.push([drawBlurMap, 'blur'])
   drawCalls.push([drawToneMap, 'tone_map'])
   const statsWidget = createStatsWidget(drawCalls, regl)
 
@@ -187,6 +197,8 @@ const main = (assets: Record<string, string>) => {
 
     bunnyModels.update()
 
+    fbo.resize(viewportWidth, viewportHeight)
+
     pLightShadowDraws.forEach((cmd) => {
       cmd(6, () => {
         regl.clear({ depth: 1 })
@@ -195,11 +207,11 @@ const main = (assets: Record<string, string>) => {
       })
     })
 
-    fbo.resize(viewportWidth, viewportHeight)
     camera(() => {
       lightScope(() => {
         mainDraw(() => {
-          regl.clear({ color: [0.06, 0.06, 0.06, 255], depth: 1 })
+          // clear the fbo from last time
+          regl.clear({ color: [0.00, 0.00, 0.00, 255], depth: 1 })
           bunnyDraw()
           planeDraw()
         })
@@ -208,6 +220,8 @@ const main = (assets: Record<string, string>) => {
         lightBulbDraw()
       })
     })
+
+    // drawBlurMap(blurProps)
 
     drawToneMap()
   })
@@ -228,7 +242,7 @@ const init = function (): REGL.Regl {
   requestExtensions.push('ANGLE_instanced_arrays')
   return REGL({
     extensions: requestExtensions,
-    optionalExtensions: ['oes_texture_float_linear'],
+    optionalExtensions: ['oes_texture_float_linear', 'webgl_draw_buffers'],
     profile: true,
     attributes: { antialias: false },
   })

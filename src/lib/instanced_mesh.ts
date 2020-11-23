@@ -12,7 +12,7 @@ export class InstancedMesh {
   constructor(regl: REGL.Regl, mesh: Mesh, models: Model[]) {
     this.mesh = mesh
     this.models = models
-    this.buffer = regl.buffer({ data: [], type: 'float', length: models.length, usage: 'dynamic' })
+    this.buffer = regl.buffer({ data: [], type: 'float', length: models.length, usage: 'static' })
     this.modelMeshConfig = this.mesh.config(Model.config({}, this.buffer))
     this._updateBuffer()
   }
