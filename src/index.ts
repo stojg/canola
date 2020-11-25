@@ -9,7 +9,13 @@ import { cube } from './models/cube'
 import { createStatsWidget } from './ui/stats-widget'
 import { Model } from './lib/model'
 import { debugLogger } from './lib/shame'
-import { halfFloatTextureExt, queryTimerExt, textureFloatExt } from './lib/cap'
+import {
+  extTextureHalfFloat,
+  extDisjointTimerQuery,
+  extTextureFloat,
+  extTextureHalfFloatLinear,
+  extTextureFloatLinear, extDrawBuffers,
+} from './lib/cap'
 import { SpinController } from './lib/controller'
 import { Mesh } from './lib/mesh'
 import { InstancedMesh } from './lib/instanced_mesh'
@@ -60,7 +66,7 @@ const main = (assets: Record<string, string>) => {
   const regl = init()
 
   const fbo = regl.framebuffer({
-    color: regl.texture({ width: 1, height: 1, wrap: 'clamp', format: 'rgba', type: 'half float' }), // main
+    color: regl.texture({ width: 1, height: 1, wrap: 'clamp', format: 'rgba', type: 'half float', min: "nearest", mag: 'nearest'}), // main
     depth: true,
     stencil: false,
   })
@@ -162,6 +168,8 @@ const main = (assets: Record<string, string>) => {
     attributes: { position: [-4, -4, 4, -4, 0, 4] },
     uniforms: {
       tex: fbo,
+      wRcp: (context : REGL.DefaultContext) => context.viewportWidth,
+      hRcp: (context : REGL.DefaultContext) => context.viewportHeight,
     },
     depth: { enable: false },
     count: 3,
@@ -214,20 +222,36 @@ const main = (assets: Record<string, string>) => {
 
 const init = function (): REGL.Regl {
   const requestExtensions: string[] = []
-  if (queryTimerExt()) {
-    requestExtensions.push('EXT_disjoint_timer_query')
+  if (extDisjointTimerQuery()) {
+    requestExtensions.push(extDisjointTimerQuery())
   }
-  if (halfFloatTextureExt()) {
-    requestExtensions.push(halfFloatTextureExt())
+  if (extTextureHalfFloat()) {
+    requestExtensions.push(extTextureHalfFloat())
   }
-  if (textureFloatExt()) {
-    requestExtensions.push(textureFloatExt())
+  if (extTextureHalfFloatLinear()) {
+    requestExtensions.push(extTextureHalfFloat())
   }
-  requestExtensions.push('oes_vertex_array_object')
+  if (extTextureFloat()) {
+    requestExtensions.push(extTextureFloat())
+  }
+  if (extTextureFloatLinear()) {
+    requestExtensions.push(extTextureFloatLinear())
+  }
+  if (extDrawBuffers()) {
+    requestExtensions.push(extDrawBuffers())
+  }
+
+  // these are regarded as almost universally supported (famous last words)
   requestExtensions.push('ANGLE_instanced_arrays')
+  requestExtensions.push('EXT_blend_minmax')
+  requestExtensions.push('OES_element_index_uint')
+  requestExtensions.push('OES_standard_derivatives')
+  requestExtensions.push('OES_vertex_array_object')
+  requestExtensions.push('WEBGL_debug_renderer_info')
+  requestExtensions.push('WEBGL_lose_context')
   return REGL({
     extensions: requestExtensions,
-    optionalExtensions: ['oes_texture_float_linear', 'webgl_draw_buffers'],
+    optionalExtensions: ['webgl_draw_buffers'],
     profile: true,
     attributes: { antialias: false },
   })

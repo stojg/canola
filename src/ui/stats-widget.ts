@@ -1,5 +1,5 @@
 import type REGL from 'regl'
-import { queryTimerExt } from '../lib/cap'
+import { extDisjointTimerQuery } from '../lib/cap'
 
 const getReadableFileSizeString = (fileSizeInBytes: number) => {
   let i = -1
@@ -110,7 +110,7 @@ export function createStatsWidget(drawCalls: [REGL.DrawCommand, string][], regl:
         let totalGpu = 0.0
         for (let i = 0; i < drawCalls.length; i++) {
           drawCall = drawCalls[i]
-          const gpuTime = queryTimerExt() ? round(avgGpuFrameTime[i]) : 'n/a'
+          const gpuTime = extDisjointTimerQuery() ? round(avgGpuFrameTime[i]) : 'n/a'
           println(drawCall[1] + ' : ' + round(avgGpuFrameTime[i] + avgCpuFrameTime[i]) + 'ms (' + round(avgCpuFrameTime[i]) + ' | ' + gpuTime + ')')
           totalCpu += avgCpuFrameTime[i]
           totalGpu += avgGpuFrameTime[i]
