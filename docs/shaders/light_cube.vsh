@@ -13,7 +13,7 @@ attribute vec4 modelD;
 uniform mat4 projectionView;
 uniform Light light;
 
-varying vec3 lightDirection;
+varying float depth;
 
 void main()
 {
@@ -21,5 +21,7 @@ void main()
 
     vec3 worldPos = vec3(model * vec4(position, 1.0));
     gl_Position = projectionView * vec4(worldPos, 1.0);
-    lightDirection = (worldPos - light.position.xyz);
+
+    vec3 lightVector = (worldPos - light.position.xyz);
+    depth = dot(lightVector, lightVector);
 }

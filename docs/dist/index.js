@@ -62,7 +62,7 @@ const main = (assets) => {
   const controls2 = new FPSControls(regl2._gl.canvas);
   const camera2 = createCamera(regl2, controls2, {position: [0, 3, 10]});
   const lights = new Lights();
-  lights.push(new DirectionalLight(regl2, 6, [1, 1, 0.5], [-1, 1, 1]));
+  lights.push(new DirectionalLight(regl2, 5, [1, 1, 0.5], [-1, 1, 1]));
   lights.push(new PointLight(regl2, 300, [1, 1, 0.8], [-3, 2, -3], 10));
   lights.push(new PointLight(regl2, 300, [1, 0, 0], [3, 2, 3], 10));
   lights.push(new PointLight(regl2, 0, [0, 1, 0], [-3, 2, 3], 10));
@@ -114,7 +114,7 @@ const main = (assets) => {
   }
   const bunnyModels = new InstancedMesh(regl2, bunnyMesh, bunnyProps);
   const bunnyDraw = regl2(bunnyModels.config({}));
-  const planeModels = [new Model({albedo: [0.3, 0.3, 0.3], metallic: 0.1, roughness: 0.9}, [0, 0, 0], 20)];
+  const planeModels = [new Model({albedo: [0.1, 0.1, 0.1], metallic: 0.1, roughness: 0.9}, [0, 0, 0], 20)];
   const planes = new InstancedMesh(regl2, planeMesh, planeModels);
   const planeDraw = regl2(planes.config({}));
   const lightProps = [];

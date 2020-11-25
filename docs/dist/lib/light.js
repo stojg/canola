@@ -116,9 +116,7 @@ export class DirectionalLight extends Light {
     return deepmerge2(previous, {
       uniforms: {
         "light.position": this.position,
-        projectionView: () => {
-          return mat4.mul(mat4.create(), proj, view);
-        }
+        projectionView: () => mat4.mul(mat4.create(), proj, view)
       },
       framebuffer: this._shadowFBO
     });
@@ -133,31 +131,22 @@ export class PointLight extends Light {
     });
   }
   depthDrawConfig(previous = {}) {
-    const shadowFbo = this._shadowFBO;
     const proj = mat4.perspective(mat4.create(), glMatrix.toRadian(90), 1, 0.1, this.radius);
+    const sides = [
+      mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(this.position), vec3.add(vec3.create(), vec3.fromValues(1, 0, 0), xyz(this.position)), [0, -1, 0])),
+      mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(this.position), vec3.add(vec3.create(), vec3.fromValues(-1, 0, 0), xyz(this.position)), [0, -1, 0])),
+      mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(this.position), vec3.add(vec3.create(), vec3.fromValues(0, 1, 0), xyz(this.position)), [0, 0, 1])),
+      mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(this.position), vec3.add(vec3.create(), vec3.fromValues(0, -1, 0), xyz(this.position)), [0, 0, -1])),
+      mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(this.position), vec3.add(vec3.create(), vec3.fromValues(0, 0, 1), xyz(this.position)), [0, -1, 0])),
+      mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(this.position), vec3.add(vec3.create(), vec3.fromValues(0, 0, -1), xyz(this.position)), [0, -1, 0]))
+    ];
+    const side = (i) => sides[i];
     return deepmerge2(previous, {
       uniforms: {
         "light.position": this.position,
-        projectionView: (context, props, batchId) => {
-          switch (batchId) {
-            case 0:
-              return mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(this.position), vec3.add(vec3.create(), vec3.fromValues(1, 0, 0), xyz(this.position)), [0, -1, 0]));
-            case 1:
-              return mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(this.position), vec3.add(vec3.create(), vec3.fromValues(-1, 0, 0), xyz(this.position)), [0, -1, 0]));
-            case 2:
-              return mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(this.position), vec3.add(vec3.create(), vec3.fromValues(0, 1, 0), xyz(this.position)), [0, 0, 1]));
-            case 3:
-              return mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(this.position), vec3.add(vec3.create(), vec3.fromValues(0, -1, 0), xyz(this.position)), [0, 0, -1]));
-            case 4:
-              return mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(this.position), vec3.add(vec3.create(), vec3.fromValues(0, 0, 1), xyz(this.position)), [0, -1, 0]));
-            case 5:
-              return mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(this.position), vec3.add(vec3.create(), vec3.fromValues(0, 0, -1), xyz(this.position)), [0, -1, 0]));
-          }
-        }
+        projectionView: (context, props, batchId) => side(batchId)
       },
-      framebuffer: function(context, props, batchId) {
-        return shadowFbo.faces[batchId];
-      }
+      framebuffer: (context, props, batchId) => this._shadowFBO.faces[batchId]
     });
   }
 }
