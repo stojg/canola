@@ -73,7 +73,7 @@ const main = (assets: Record<string, string>) => {
   const camera = createCamera(regl, controls, { position: [0, 3, 10] })
 
   const lights = new Lights()
-  lights.push(new DirectionalLight(regl, 6.0, [1.0, 1.0, 0.5], [-1, 1, 1]))
+  lights.push(new DirectionalLight(regl, 5.0, [1.0, 1.0, 0.5], [-1, 1, 1]))
   lights.push(new PointLight(regl, 300.0, [1, 1, 0.8], [-3, 2, -3], 10))
   lights.push(new PointLight(regl, 300.0, [1, 0, 0], [3, 2, 3], 10))
   lights.push(new PointLight(regl, 0.0, [0, 1, 0], [-3, 2, 3], 10))
@@ -141,7 +141,7 @@ const main = (assets: Record<string, string>) => {
   }
   const bunnyModels = new InstancedMesh(regl, bunnyMesh, bunnyProps)
   const bunnyDraw = regl(bunnyModels.config({}))
-  const planeModels = [new Model({ albedo: [0.3, 0.3, 0.3], metallic: 0.1, roughness: 0.9 }, [0, 0, 0], 20)]
+  const planeModels = [new Model({ albedo: [0.1, 0.1, 0.1], metallic: 0.1, roughness: 0.9 }, [0, 0, 0], 20)]
   const planes = new InstancedMesh(regl, planeMesh, planeModels)
   const planeDraw = regl(planes.config({}))
 

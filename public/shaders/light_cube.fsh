@@ -5,8 +5,8 @@ struct Light {
     vec4 position;
 };
 
-varying vec3 lightDirection;
+varying float depth;
 
 void main () {
-    gl_FragColor = vec4(vec3(dot(lightDirection, lightDirection)), 1.0);
+    gl_FragColor = vec4(depth, 0, 0, 1.0);
 }

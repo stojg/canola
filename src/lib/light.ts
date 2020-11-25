@@ -145,9 +145,7 @@ export class DirectionalLight extends Light {
     return deepmerge(previous, {
       uniforms: {
         'light.position': this.position,
-        projectionView: () => {
-          return mat4.mul(mat4.create(), proj, view)
-        },
+        projectionView: () => mat4.mul(mat4.create(), proj, view),
       },
       framebuffer: this._shadowFBO,
     })
@@ -166,31 +164,24 @@ export class PointLight extends Light {
   }
 
   depthDrawConfig(previous: {} = {}) {
-    const shadowFbo = this._shadowFBO
+    // @todo recalculate these values if the light moves or changes radius
     const proj = mat4.perspective(mat4.create(), glMatrix.toRadian(90), 1, 0.1, this.radius)
+    const sides = [
+      mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(this.position), vec3.add(vec3.create(), vec3.fromValues(1, 0, 0), xyz(this.position)), [0, -1, 0])),
+      mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(this.position), vec3.add(vec3.create(), vec3.fromValues(-1, 0, 0), xyz(this.position)), [0, -1, 0])),
+      mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(this.position), vec3.add(vec3.create(), vec3.fromValues(0, 1, 0), xyz(this.position)), [0, 0, 1])),
+      mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(this.position), vec3.add(vec3.create(), vec3.fromValues(0, -1, 0), xyz(this.position)), [0, 0, -1])),
+      mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(this.position), vec3.add(vec3.create(), vec3.fromValues(0, 0, 1), xyz(this.position)), [0, -1, 0])),
+      mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(this.position), vec3.add(vec3.create(), vec3.fromValues(0, 0, -1), xyz(this.position)), [0, -1, 0])),
+    ]
+
+    const side = (i : number) => sides[i]
     return deepmerge(previous, {
       uniforms: {
         'light.position': this.position,
-        projectionView: (context: REGL.DefaultContext, props: any, batchId: number) => {
-          switch (batchId) {
-            case 0: // +x right
-              return mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(this.position), vec3.add(vec3.create(), vec3.fromValues(1, 0, 0), xyz(this.position)), [0, -1, 0]))
-            case 1: // -x left
-              return mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(this.position), vec3.add(vec3.create(), vec3.fromValues(-1, 0, 0), xyz(this.position)), [0, -1, 0]))
-            case 2: // +y top
-              return mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(this.position), vec3.add(vec3.create(), vec3.fromValues(0, 1, 0), xyz(this.position)), [0, 0, 1]))
-            case 3: // -y bottom
-              return mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(this.position), vec3.add(vec3.create(), vec3.fromValues(0, -1, 0), xyz(this.position)), [0, 0, -1]))
-            case 4: // +z near
-              return mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(this.position), vec3.add(vec3.create(), vec3.fromValues(0, 0, 1), xyz(this.position)), [0, -1, 0]))
-            case 5: // -z far
-              return mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(this.position), vec3.add(vec3.create(), vec3.fromValues(0, 0, -1), xyz(this.position)), [0, -1, 0]))
-          }
-        },
+        projectionView: (context: REGL.DefaultContext, props: {}, batchId: number) => side(batchId),
       },
-      framebuffer: function (context: REGL.DefaultContext, props: {}, batchId: number) {
-        return shadowFbo.faces[batchId]
-      },
+      framebuffer: (context: REGL.DefaultContext, props: {}, batchId: number) => this._shadowFBO.faces[batchId],
     })
   }
 }
