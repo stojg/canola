@@ -2,7 +2,6 @@ import type REGL from 'regl'
 import { glMatrix, mat4, quat, vec3 } from 'gl-matrix'
 import { Transform } from './transform'
 import type { FPSControls } from './controls'
-import deepmerge from 'deepmerge'
 
 interface CameraProps {
   up?: REGL.Vec3
@@ -12,17 +11,16 @@ interface CameraProps {
 }
 
 interface CameraState {
-  transform : Transform,
+  transform: Transform
   yawChange: number
   pitchChange: number
-  pointerLocked: boolean,
-  up: vec3,
-  projection: mat4,
-  view: mat4,
+  pointerLocked: boolean
+  up: vec3
+  projection: mat4
+  view: mat4
 }
 
 export class Camera {
-
   regl: REGL.Regl
   props: CameraProps
   controls: FPSControls
@@ -30,7 +28,7 @@ export class Camera {
   viewportWidth: number = 0
   viewportHeight: number = 0
 
-  state : CameraState = {
+  state: CameraState = {
     transform: new Transform({}),
     yawChange: 0,
     pitchChange: 0,
@@ -41,13 +39,13 @@ export class Camera {
   }
 
   constructor(regl: REGL.Regl, controls: FPSControls, props: CameraProps) {
-    this.regl= regl
+    this.regl = regl
     this.props = props
     this.controls = controls
-    this.state.transform = this.props.transform || new Transform({position: this.props.position, rotation: this.props.rotation })
+    this.state.transform = this.props.transform || new Transform({ position: this.props.position, rotation: this.props.rotation })
   }
 
-  get position() : vec3 {
+  get position(): vec3 {
     return this.state.transform.position
   }
 
@@ -108,12 +106,12 @@ export class Camera {
     this.view()
   }
 
-  regenProjection(x : number, y: number) : boolean {
-    return (x != this.viewportWidth || y != this.viewportHeight)
+  regenProjection(x: number, y: number): boolean {
+    return x != this.viewportWidth || y != this.viewportHeight
   }
 
-  projection(viewportWidth: number, viewportHeight: number) : mat4 {
-    if(!this.regenProjection(viewportWidth, viewportHeight)) {
+  projection(viewportWidth: number, viewportHeight: number): mat4 {
+    if (!this.regenProjection(viewportWidth, viewportHeight)) {
       return this.state.projection
     }
     this.viewportWidth = viewportWidth
@@ -129,9 +127,9 @@ export class Camera {
       uniforms: {
         // @ts-ignore
         projection: this.regl.context('projection'),
-          view: () => this.state.view,
-          camPos: () => this.position,
-      }
+        view: () => this.state.view,
+        camPos: () => this.position,
+      },
     }
   }
 

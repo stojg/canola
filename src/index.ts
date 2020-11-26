@@ -9,13 +9,7 @@ import { cube } from './models/cube'
 import { createStatsWidget } from './ui/stats-widget'
 import { Model } from './lib/model'
 import { debugLogger } from './lib/shame'
-import {
-  extTextureHalfFloat,
-  extDisjointTimerQuery,
-  extTextureFloat,
-  extTextureHalfFloatLinear,
-  extTextureFloatLinear, extDrawBuffers,
-} from './lib/cap'
+import { extDisjointTimerQuery, extDrawBuffers, extTextureFloat, extTextureFloatLinear, extTextureHalfFloat, extTextureHalfFloatLinear } from './lib/cap'
 import { SpinController } from './lib/controller'
 import { Mesh } from './lib/mesh'
 import { InstancedMesh } from './lib/instanced_mesh'
@@ -65,11 +59,10 @@ const loading = {
 const useFBO = false
 
 const main = (assets: Record<string, string>) => {
-
   const regl = init(!useFBO)
 
   const fullScreenFBO = regl.framebuffer({
-    color: regl.texture({ width: 1, height: 1, wrap: 'clamp', format: 'rgba', type: 'half float', min: "nearest", mag: 'nearest'}), // main
+    color: regl.texture({ width: 1, height: 1, wrap: 'clamp', format: 'rgba', type: 'half float', min: 'nearest', mag: 'nearest' }), // main
     depth: true,
     stencil: false,
   })
@@ -174,8 +167,8 @@ const main = (assets: Record<string, string>) => {
     attributes: { position: [-4, -4, 4, -4, 0, 4] },
     uniforms: {
       tex: fullScreenFBO,
-      wRcp: (context : REGL.DefaultContext) => context.viewportWidth,
-      hRcp: (context : REGL.DefaultContext) => context.viewportHeight,
+      wRcp: (context: REGL.DefaultContext) => context.viewportWidth,
+      hRcp: (context: REGL.DefaultContext) => context.viewportHeight,
     },
     depth: { enable: false },
     count: 3,
@@ -214,7 +207,6 @@ const main = (assets: Record<string, string>) => {
     })
 
     cameraScope(() => {
-
       lightScope(() => {
         mainDraw(() => {
           // clear the fbo from last time
@@ -234,7 +226,7 @@ const main = (assets: Record<string, string>) => {
   })
 }
 
-const init = function (antialias : boolean = true): REGL.Regl {
+const init = function (antialias: boolean = true): REGL.Regl {
   const requestExtensions: string[] = []
   if (extDisjointTimerQuery()) {
     requestExtensions.push(extDisjointTimerQuery())

@@ -37,15 +37,12 @@ export class InstancedMesh {
   }
 
   sort(fromPosition: vec3) {
-    this.models.sort((a,b ): number => {
-      const aPos : vec3 = vec3.create()
-      const bPos : vec3 = vec3.create()
+    this.models.sort((a, b): number => {
+      const aPos: vec3 = vec3.create()
+      const bPos: vec3 = vec3.create()
       mat4.getTranslation(aPos, a.model)
       mat4.getTranslation(bPos, b.model)
       return vec3.sqrDist(fromPosition, aPos) - vec3.sqrDist(fromPosition, bPos)
     })
-
-
-
   }
 }

@@ -175,7 +175,7 @@ export class PointLight extends Light {
       mat4.mul(mat4.create(), proj, mat4.lookAt(mat4.create(), xyz(this.position), vec3.add(vec3.create(), vec3.fromValues(0, 0, -1), xyz(this.position)), [0, -1, 0])),
     ]
 
-    const side = (i : number) => sides[i]
+    const side = (i: number) => sides[i]
     return deepmerge(previous, {
       uniforms: {
         'light.position': this.position,
