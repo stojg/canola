@@ -3,7 +3,7 @@ import resl from 'resl'
 import { Camera } from './lib/camera'
 import bunny from 'bunny'
 import plane from './models/plane'
-import { mat4, vec3 } from 'gl-matrix'
+import { vec3 } from 'gl-matrix'
 import { FPSControls } from './lib/controls'
 import { cube } from './models/cube'
 import { createStatsWidget } from './ui/stats-widget'
@@ -62,14 +62,19 @@ const loading = {
   },
 }
 
-const main = (assets: Record<string, string>) => {
-  const regl = init()
+const useFBO = false
 
-  const fbo = regl.framebuffer({
+const main = (assets: Record<string, string>) => {
+
+  const regl = init(!useFBO)
+
+  const fullScreenFBO = regl.framebuffer({
     color: regl.texture({ width: 1, height: 1, wrap: 'clamp', format: 'rgba', type: 'half float', min: "nearest", mag: 'nearest'}), // main
     depth: true,
     stencil: false,
   })
+
+  const fbo = useFBO ? fullScreenFBO : null
 
   const cubeMesh = new Mesh(cube.positions, cube.indices, cube.normals)
   const planeMesh = new Mesh(plane.positions, plane.indices, plane.normals)
@@ -163,12 +168,12 @@ const main = (assets: Record<string, string>) => {
   const lightBulbDraw = regl(lightsI.config({}))
   const lightScope = regl(lights.config())
 
-  const drawToneMap = regl({
+  const drawFBO = regl({
     frag: assets['tonemap.fsh'],
     vert: assets['screen.vsh'],
     attributes: { position: [-4, -4, 4, -4, 0, 4] },
     uniforms: {
-      tex: fbo,
+      tex: fullScreenFBO,
       wRcp: (context : REGL.DefaultContext) => context.viewportWidth,
       hRcp: (context : REGL.DefaultContext) => context.viewportHeight,
     },
@@ -178,11 +183,13 @@ const main = (assets: Record<string, string>) => {
 
   const drawCalls: [REGL.DrawCommand, string][] = []
   pLightShadowDraws.forEach((n, i) => {
-    drawCalls.push([n, `drawDepth${i}`])
+    drawCalls.push([n, `depth${i}`])
   })
   drawCalls.push([mainDraw, 'main'])
   drawCalls.push([emissiveDraw, 'emissive'])
-  drawCalls.push([drawToneMap, 'tone_map'])
+  if (fbo !== null) {
+    drawCalls.push([drawFBO, 'fbo'])
+  }
   const statsWidget = createStatsWidget(drawCalls, regl)
 
   let prevTime = 0.0
@@ -195,7 +202,8 @@ const main = (assets: Record<string, string>) => {
     bunnyModels.update()
     bunnyModels.sort(camera.position)
 
-    fbo.resize(viewportWidth, viewportHeight)
+    // @ts-ignore
+    fbo?.resize(viewportWidth, viewportHeight)
 
     pLightShadowDraws.forEach((cmd) => {
       cmd(6, () => {
@@ -220,11 +228,13 @@ const main = (assets: Record<string, string>) => {
       })
     })
 
-    drawToneMap()
+    if (fbo !== null) {
+      drawFBO()
+    }
   })
 }
 
-const init = function (): REGL.Regl {
+const init = function (antialias : boolean = true): REGL.Regl {
   const requestExtensions: string[] = []
   if (extDisjointTimerQuery()) {
     requestExtensions.push(extDisjointTimerQuery())
@@ -257,7 +267,7 @@ const init = function (): REGL.Regl {
     extensions: requestExtensions,
     optionalExtensions: ['webgl_draw_buffers'],
     profile: true,
-    attributes: { antialias: false },
+    attributes: { antialias: antialias },
   })
 }
 

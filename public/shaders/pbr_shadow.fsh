@@ -38,6 +38,10 @@ float getDistanceAtt( vec3 unormalizedLightVector , float invSqrAttRadius);
 float getAngleAtt(vec3 normalizedLightVector, vec3 lightDir, float lightAngleScale, float lightAngleOffset);
 vec3 brdf(vec3 albedo, vec3 F0, vec3 N, vec3 L, vec3 C, float roughness);
 
+vec3 tonemap(vec3 v) {
+    return pow((v / (v + vec3(1.0))), vec3(1.0/2.2));
+}
+
 void main()
 {
     vec3 N = normalize(Normal);
@@ -81,7 +85,7 @@ void main()
     vec3 fakeAmbient = Albedo * ao;
     vec3 color = fakeAmbient + Lo;
 
-    gl_FragData[0] = vec4(color, 1.0);
+    gl_FragData[0] = vec4(tonemap(color), 1.0);
 }
 
 vec4 getSampleFromArray(int ndx, vec3 uv) {
