@@ -1,9 +1,9 @@
 import REGL from 'regl'
 import resl from 'resl'
-import { createCamera } from './lib/camera'
+import { Camera } from './lib/camera'
 import bunny from 'bunny'
 import plane from './models/plane'
-import { vec3 } from 'gl-matrix'
+import { mat4, vec3 } from 'gl-matrix'
 import { FPSControls } from './lib/controls'
 import { cube } from './models/cube'
 import { createStatsWidget } from './ui/stats-widget'
@@ -76,7 +76,8 @@ const main = (assets: Record<string, string>) => {
   const bunnyMesh = new Mesh(bunny.positions, bunny.cells)
   const controls = new FPSControls(regl._gl.canvas as HTMLCanvasElement)
 
-  const camera = createCamera(regl, controls, { position: [0, 3, 10] })
+  const camera = new Camera(regl, controls, { position: [0, 3, 10] })
+  const cameraScope = camera.draw()
 
   const lights = new Lights()
   lights.push(new DirectionalLight(regl, 5.0, [1.0, 1.0, 0.5], [-1, 1, 1]))
@@ -188,9 +189,11 @@ const main = (assets: Record<string, string>) => {
   regl.frame(({ time, viewportWidth, viewportHeight }) => {
     const deltaTime = time - prevTime
     prevTime = time
-    statsWidget.update(deltaTime)
 
+    statsWidget.update(deltaTime)
+    camera.update()
     bunnyModels.update()
+    bunnyModels.sort(camera.position)
 
     fbo.resize(viewportWidth, viewportHeight)
 
@@ -202,7 +205,8 @@ const main = (assets: Record<string, string>) => {
       })
     })
 
-    camera(() => {
+    cameraScope(() => {
+
       lightScope(() => {
         mainDraw(() => {
           // clear the fbo from last time

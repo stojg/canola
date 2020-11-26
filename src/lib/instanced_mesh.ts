@@ -2,10 +2,11 @@ import type { Mesh } from './mesh'
 import { Model } from './model'
 import type REGL from 'regl'
 import deepmerge from 'deepmerge'
+import { mat4, vec3 } from 'gl-matrix'
 
 export class InstancedMesh {
   private mesh: Mesh
-  private models: Model[]
+  models: Model[]
   private readonly buffer: REGL.Buffer
   private modelMeshConfig: REGL.DrawConfig<{}, {}, {}, {}, REGL.DefaultContext>
 
@@ -29,9 +30,22 @@ export class InstancedMesh {
 
   private _updateBuffer() {
     const a: number[][] = []
-    this.models.forEach((l: Model) => {
-      a.push(l.bufferData)
+    this.models.forEach((model: Model) => {
+      a.push(model.bufferData)
     })
     this.buffer({ data: a })
+  }
+
+  sort(fromPosition: vec3) {
+    this.models.sort((a,b ): number => {
+      const aPos : vec3 = vec3.create()
+      const bPos : vec3 = vec3.create()
+      mat4.getTranslation(aPos, a.model)
+      mat4.getTranslation(bPos, b.model)
+      return vec3.sqrDist(fromPosition, aPos) - vec3.sqrDist(fromPosition, bPos)
+    })
+
+
+
   }
 }
