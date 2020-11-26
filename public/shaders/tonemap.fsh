@@ -24,11 +24,14 @@ vec4 textureSampling(sampler2D t, vec2 coord) {
 }
 
 void main() {
+    vec3 rgbM = textureSampling(tex, uv).rgb;
+    gl_FragColor = vec4(rgbM, 1.0);
+    return;
+
     vec2 u_texelStep = vec2(1.0/wRcp, 1.0/hRcp);
 
     // do some fxaa
 
-    vec3 rgbM = textureSampling(tex, uv).rgb;
     vec3 rgbNW = textureSampling(tex, uv + vec2(-1, 1) * u_texelStep).rgb;
     vec3 rgbNE = textureSampling(tex, uv + vec2(1, 1)* u_texelStep).rgb;
     vec3 rgbSW = textureSampling(tex, uv + vec2(-1, -1)* u_texelStep).rgb;
@@ -101,8 +104,4 @@ void main() {
         gl_FragColor.r = 1.0;
     }
 
-
-//    rgbM = rgbM / (rgbM + vec3(1.0));
-//    rgbM = pow(rgbM, vec3(1.0/2.2));
-//    gl_FragColor = vec4(fragColor, 1.0);
 }
