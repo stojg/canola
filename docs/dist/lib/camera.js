@@ -1,86 +1,105 @@
 import {glMatrix, mat4, quat, vec3} from "../../web/gl-matrix.js";
 import {Transform} from "./transform.js";
-export function createCamera(regl, controls, props) {
-  const cameraState = {
-    transform: props.transform || new Transform({
-      position: props.position,
-      rotation: props.rotation
-    }),
-    yawChange: 0,
-    pitchChange: 0,
-    pointerLocked: false,
-    up: new Float32Array(props.up || [0, 1, 0]),
-    projection: mat4.identity(new Float32Array(16)),
-    view: mat4.identity(new Float32Array(16)),
-    camPos: props.position
-  };
-  const uniforms = ["projection", "view", "camPos"];
-  function look() {
-    const ptrSensitivity = 5e-3;
-    const ptr = controls.pointerMovement();
-    cameraState.yawChange = lerp(cameraState.yawChange, ptr[0] * ptrSensitivity, 0.5);
-    cameraState.pitchChange = lerp(cameraState.pitchChange, ptr[1] * ptrSensitivity, 0.5);
-    cameraState.transform.rotateXY(-cameraState.yawChange, -cameraState.pitchChange);
+export class Camera {
+  constructor(regl, controls, props) {
+    this.viewportWidth = 0;
+    this.viewportHeight = 0;
+    this.state = {
+      transform: new Transform({}),
+      yawChange: 0,
+      pitchChange: 0,
+      pointerLocked: false,
+      up: [0, 1, 0],
+      projection: mat4.identity(new Float32Array(16)),
+      view: mat4.identity(new Float32Array(16))
+    };
+    this.regl = regl;
+    this.props = props;
+    this.controls = controls;
+    this.state.transform = this.props.transform || new Transform({position: this.props.position, rotation: this.props.rotation});
   }
-  function move() {
-    let move2 = vec3.create();
+  get position() {
+    return this.state.transform.position;
+  }
+  look() {
+    const ptrSensitivity = 5e-3;
+    const ptr = this.controls.pointerMovement();
+    this.state.yawChange = lerp(this.state.yawChange, ptr[0] * ptrSensitivity, 0.5);
+    this.state.pitchChange = lerp(this.state.pitchChange, ptr[1] * ptrSensitivity, 0.5);
+    this.state.transform.rotateXY(-this.state.yawChange, -this.state.pitchChange);
+  }
+  move() {
+    let move = vec3.create();
     let tmp = vec3.create();
-    if (controls.keyPressed("w")) {
-      vec3.transformQuat(tmp, [0, 0, -1], cameraState.transform.rotation);
-      vec3.add(move2, move2, tmp);
+    if (this.controls.keyPressed("w")) {
+      vec3.transformQuat(tmp, [0, 0, -1], this.state.transform.rotation);
+      vec3.add(move, move, tmp);
     }
-    if (controls.keyPressed("s")) {
-      vec3.transformQuat(tmp, [0, 0, 1], cameraState.transform.rotation);
-      vec3.add(move2, move2, tmp);
+    if (this.controls.keyPressed("s")) {
+      vec3.transformQuat(tmp, [0, 0, 1], this.state.transform.rotation);
+      vec3.add(move, move, tmp);
     }
-    if (controls.keyPressed("a")) {
-      vec3.transformQuat(tmp, [-1, 0, 0], cameraState.transform.rotation);
-      vec3.add(move2, move2, tmp);
+    if (this.controls.keyPressed("a")) {
+      vec3.transformQuat(tmp, [-1, 0, 0], this.state.transform.rotation);
+      vec3.add(move, move, tmp);
     }
-    if (controls.keyPressed("d")) {
-      vec3.transformQuat(tmp, [1, 0, 0], cameraState.transform.rotation);
-      vec3.add(move2, move2, tmp);
+    if (this.controls.keyPressed("d")) {
+      vec3.transformQuat(tmp, [1, 0, 0], this.state.transform.rotation);
+      vec3.add(move, move, tmp);
     }
     const sensitivity = 0.1;
-    vec3.scale(move2, move2, sensitivity);
-    cameraState.transform.addPosition(move2);
+    vec3.scale(move, move, sensitivity);
+    this.state.transform.addPosition(move);
   }
-  function view() {
+  view() {
     const rotation = quat.create();
-    mat4.getRotation(rotation, cameraState.transform.transformation);
+    mat4.getRotation(rotation, this.state.transform.transformation);
     quat.conjugate(rotation, rotation);
     const translation = vec3.create();
-    mat4.getTranslation(translation, cameraState.transform.transformation);
+    mat4.getTranslation(translation, this.state.transform.transformation);
     vec3.negate(translation, translation);
     const cameraRotation = mat4.create();
     mat4.fromQuat(cameraRotation, rotation);
     const cameraTranslation = mat4.create();
     mat4.fromTranslation(cameraTranslation, translation);
-    mat4.multiply(cameraState.view, cameraRotation, cameraTranslation);
+    mat4.multiply(this.state.view, cameraRotation, cameraTranslation);
   }
-  function update() {
-    cameraState.camPos = vec3.clone(cameraState.transform.position);
-    look();
-    move();
-    cameraState.transform.update();
-    view();
+  update() {
+    this.look();
+    this.move();
+    this.state.transform.update();
+    this.view();
   }
-  const injectContext = regl({
-    context: Object.assign({}, cameraState, {
-      projection: (ctx) => mat4.perspective(cameraState.projection, glMatrix.toRadian(80), ctx.viewportWidth / ctx.viewportHeight, 0.01, 1e3)
-    }),
-    uniforms: Object.keys(cameraState).reduce((res, name) => {
-      if (uniforms.includes(name)) {
-        res[name] = regl.context(name);
+  regenProjection(x, y) {
+    return x != this.viewportWidth || y != this.viewportHeight;
+  }
+  projection(viewportWidth, viewportHeight) {
+    if (!this.regenProjection(viewportWidth, viewportHeight)) {
+      return this.state.projection;
+    }
+    this.viewportWidth = viewportWidth;
+    this.viewportHeight = viewportHeight;
+    return mat4.perspective(this.state.projection, glMatrix.toRadian(80), viewportWidth / viewportHeight, 0.01, 1e3);
+  }
+  config() {
+    return {
+      context: {
+        projection: (ctx) => this.projection(ctx.viewportWidth, ctx.viewportHeight)
+      },
+      uniforms: {
+        projection: this.regl.context("projection"),
+        view: () => this.state.view,
+        camPos: () => this.position
       }
-      return res;
-    }, {})
-  });
-  function render(block) {
-    update();
-    injectContext(block);
+    };
   }
-  return render;
+  draw() {
+    const config = this.config();
+    const injectContext = this.regl(config);
+    return (block) => {
+      injectContext(block);
+    };
+  }
 }
 function lerp(a, b, amount) {
   return a * (1 - amount) + b * amount;

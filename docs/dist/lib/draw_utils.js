@@ -1,10 +1,10 @@
-import { textureFloatExt } from './cap.js'
+import { extTextureFloat } from './cap.js'
 
 const fbo = regl.framebuffer({
   width: 1,
   height: 1,
   colorFormat: 'rgba',
-  colorType: textureFloatExt() ? 'float' : 'half float',
+  colorType: extTextureFloat() ? 'float' : 'half float',
   stencil: false,
 })
 

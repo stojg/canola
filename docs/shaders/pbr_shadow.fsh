@@ -33,10 +33,14 @@ varying vec3 Albedo;
 varying float Metallic;
 varying float Roughness;
 
-vec3 calcPointLight(vec3 normal, vec3 camDirection, vec3 F0 , Light light, float roughness);
-vec3 calcDirLight(vec3 normal, vec3 camDirection, vec3 F0 , Light light, float roughness);
 vec4 getSampleFromArray(int ndx, vec3 uv);
-bool inPointLightShadow(vec3 worldpos, Light light, int ndx);
+float getDistanceAtt( vec3 unormalizedLightVector , float invSqrAttRadius);
+float getAngleAtt(vec3 normalizedLightVector, vec3 lightDir, float lightAngleScale, float lightAngleOffset);
+vec3 brdf(vec3 albedo, vec3 F0, vec3 N, vec3 L, vec3 C, float roughness);
+
+vec3 tonemap(vec3 v) {
+    return pow((v / (v + vec3(1.0))), vec3(1.0/2.2));
+}
 
 void main()
 {
@@ -49,24 +53,39 @@ void main()
 
     for (int i = 0; i < NUM_POINT_LIGHTS; ++i)
     {
-        vec3 pColor = calcPointLight(N, V, F0, pointLights[i], Roughness);
+        vec3 L_ray = pointLights[i].position.xyz - WorldPos;
+        vec3 L = normalize(L_ray);
+
+        float attenuation = 1.0;
+        attenuation *= getDistanceAtt(L_ray, pointLights[i].invSqrRadius);
+        attenuation *= getAngleAtt(L, L, 1.0, 0.0);
+        if (attenuation < EPSILON) {
+            continue;
+        }
+
+        vec3 lightColor = pointLights[i].color * (pointLights[i].intensity / (4.0 * PI));
+        vec3 radiance = lightColor * attenuation;
+
+        vec3 pColor = brdf(Albedo, F0, N, L, V, Roughness) * radiance;
         if (dot(pColor, pColor) < EPSILON) {
             continue;
         }
-        if (inPointLightShadow(WorldPos, pointLights[i], i)) {
+
+        // shadow check
+        if ((getSampleFromArray(i, -L_ray).r * SHADOW_BIAS) < dot(L_ray, L_ray)) {
             continue;
         }
+
         Lo += pColor;
     }
 
-    vec3 dColor = calcDirLight(N, V, F0, dirLight, Roughness);
+    vec3 radiance = dirLight.color * (dirLight.intensity / (4.0 * PI));
+    Lo += brdf(Albedo, F0, N, normalize(dirLight.position.xyz), V, Roughness) * radiance;
 
-    Lo += dColor;
+    vec3 fakeAmbient = Albedo * ao;
+    vec3 color = fakeAmbient + Lo;
 
-    vec3 ambient = Albedo * ao;
-    vec3 color = ambient + Lo;
-
-    gl_FragData[0] = vec4(color, 1.0);
+    gl_FragData[0] = vec4(tonemap(color), 1.0);
 }
 
 vec4 getSampleFromArray(int ndx, vec3 uv) {
@@ -75,135 +94,73 @@ vec4 getSampleFromArray(int ndx, vec3 uv) {
             return textureCube(pointLightShadows[i], uv);
         }
     }
-    return vec4(1.0, 1.0, 1.0, 1.0);
+    return vec4(0.0, 1.0, 1.0, 1.0);
 }
 
-bool inPointLightShadow(vec3 worldpos, Light light, int ndx) {
-    vec3 lightRay = worldpos - light.position.xyz;
-    float sqrDist = dot(lightRay, lightRay);
-    vec4 depthSqrDist = getSampleFromArray(ndx, lightRay);
-    return (depthSqrDist.r * SHADOW_BIAS) < sqrDist;
-}
-
-vec3 fresnelSchlick(float cosTheta, vec3 F0)
-{
-    return F0 + (1.0 - F0) * pow(1.0 - cosTheta, 5.0);
-}
-
-float DistributionGGX(vec3 N, vec3 H, float roughness)
-{
-    // according to disney and epic squaring the roughness in both the geometry and normal distribution function.
-    float a      = roughness*roughness;
-    float a2     = a*a;
-    float NdotH  = max(dot(N, H), 0.0);
-    float NdotH2 = NdotH*NdotH;
-
-    float num   = a2;
-    float denom = (NdotH2 * (a2 - 1.0) + 1.0);
-    denom = PI * denom * denom;
-
-    return num / denom;
-}
-
-float GeometrySchlickGGX(float NdotV, float roughness)
-{
-    float r = (roughness + 1.0);
-    float k = (r*r) * 0.125; // (r*r) / 8
-    float num   = NdotV;
-    float denom = NdotV * (1.0 - k) + k;
-    return num / denom;
-}
-
-float GeometrySmith(vec3 N, vec3 V, vec3 L, float roughness)
-{
-    float NdotV = max(dot(N, V), 0.0);
-    float NdotL = max(dot(N, L), 0.0);
-    float ggx2  = GeometrySchlickGGX(NdotV, roughness);
-    float ggx1  = GeometrySchlickGGX(NdotL, roughness);
-
-    return ggx1 * ggx2;
-}
-
-float smoothDistanceAtt ( float squaredDistance , float invSqrAttRadius ) {
-    float factor = squaredDistance * invSqrAttRadius ;
+float smoothDistanceAtt (float squaredDistance, float invSqrAttRadius) {
+    float factor = squaredDistance * invSqrAttRadius;
     float smoothFactor = clamp(1.0 - factor * factor, 0.0, 1.0);
-    return smoothFactor * smoothFactor ;
+    return smoothFactor * smoothFactor;
 }
 
-float getDistanceAtt ( vec3 unormalizedLightVector , float invSqrAttRadius ) {
-    float sqrDist = dot ( unormalizedLightVector , unormalizedLightVector );
-    float attenuation = 1.0 / sqrDist;
-    attenuation *= smoothDistanceAtt ( sqrDist , invSqrAttRadius );
-    return attenuation;
+float getDistanceAtt(vec3 L_ray, float invSqrAttRadius) {
+    float sqrDist = dot(L_ray, L_ray);
+    return 1.0 / sqrDist * smoothDistanceAtt(sqrDist , invSqrAttRadius);
 }
 
-float getAngleAtt(vec3 normalizedLightVector, vec3 lightDir, float lightAngleScale, float lightAngleOffset)
+float getAngleAtt(vec3 L, vec3 lightForward, float lightAngleScale, float lightAngleOffset)
 {
-    float cd            = dot(lightDir, normalizedLightVector);
-    float attenuation   = clamp(cd * lightAngleScale + lightAngleOffset, 0.0, 1.0);
-    attenuation         *= attenuation;
-    return attenuation;
+    float attenuation = clamp(dot(lightForward, L) * lightAngleScale + lightAngleOffset, 0.0, 1.0);
+    return attenuation * attenuation;
 }
 
-vec3 calcPointLight(vec3 normal, vec3 camDirection, vec3 F0 , Light light, float roughness) {
-    vec3 lp = light.position.xyz - WorldPos;
-    vec3 L = normalize(lp);
+// cook-torrance brdf
+//
+// albedo is the colour of the dialetric or the tint of the metal
+// F0 surface reflection at zero incidence, dielectric
+// N is the normal vector
+// L is the normalised light ray
+// V is the world vector to the camera / view
+// V is the world vector to the camera / views
+// roughness is the roughness param in 0.0 - 1.0
+//
+// remember to map the result back to gamma corrected space
+vec3 brdf(vec3 albedo, vec3 F0, vec3 N, vec3 L, vec3 V, float roughness) {
+    const float PI = 3.14159265359;
 
-    float attenuation = 1.0;
-    attenuation *= getDistanceAtt(lp, light.invSqrRadius);
-    attenuation *= getAngleAtt(L, L, 1.0, 0.0);
-    if (attenuation < EPSILON) {
-        return vec3(0);
-    }
+    // world position of the light
+    vec3 H = normalize(V + L);
 
-    vec3 lightColor = light.color * (light.intensity / (4.0 * PI));
+    // the normal distribution
+    float a = roughness * roughness;
+    // this is something disney and EPIC mention, square roughness looks better apparently
+    float sqrA   = a*a;
+    float NdotH  = max(dot(N, H), 0.0);
+    float sqrNdotH = NdotH * NdotH;
+    float denom = (sqrNdotH * (sqrA - 1.0) + 1.0);
+    float NDF = sqrA / (PI * denom * denom);
 
-    vec3 H = normalize(camDirection + L);
+    // geometry distribution
+    float r = roughness + 1.0;
+    float k = (r*r) * 0.125; // divide by 8
 
-    // cook-torrance brdf
-    float NDF = DistributionGGX(normal, H, roughness);
-    float G   = GeometrySmith(normal, camDirection, L, roughness);
-    vec3 F    = fresnelSchlick(max(dot(H, camDirection), 0.0), F0);
+    float NdotL = max(dot(N, L), 0.0);
+    float ggx1 = NdotL / (NdotL * (1.0 - k) + k);
+    float NdotV = max(dot(N, V), 0.0);
+    float ggx2 = NdotV / (NdotV * (1.0 - k) + k);
 
-    vec3 kS = F;
-    vec3 kD = vec3(1.0) - kS;
-    kD *= 1.0 - Metallic;
+    float G = ggx1 * ggx2;
 
-    vec3 numerator    = NDF * G * F;
-    float denominator = 4.0 * max(dot(normal, camDirection), 0.0) * max(dot(normal, L), 0.0);
-    vec3 specular     = numerator / max(denominator, 0.001);
+    // the Schlick approximation to fresnel reflection
+    vec3 F = F0 + (1.0 - F0) * pow(1.0 - max(dot(H, V), 0.0), 5.0);
 
-    // add to outgoing radiance Lo
-    float NdotL = max(dot(normal, L), 0.0);
-    vec3 radiance = lightColor * attenuation;
-    return (kD * Albedo / PI + specular) * radiance * NdotL;
-}
+    // divide the energy into reflective and absorbant
+    vec3 kSpecular = F;
+    vec3 kDiffuse = vec3(1.0) - kSpecular;
+    kDiffuse *= 1.0 - Metallic;
 
-vec3 calcDirLight(vec3 normal, vec3 camDirection, vec3 F0 , Light light, float roughness) {
+    float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
+    vec3 specular = (NDF * G * F) / max(denominator, 0.001);
 
-    vec3 L = normalize(light.position.xyz);
-
-    float attenuation = 1.0;
-
-    vec3 lightColor = light.color * (light.intensity / (4.0 * PI));
-
-    vec3 H = normalize(camDirection + L);
-
-    // cook-torrance brdf
-    float NDF = DistributionGGX(normal, H, roughness);
-    float G   = GeometrySmith(normal, camDirection, L, roughness);
-    vec3 F    = fresnelSchlick(max(dot(H, camDirection), 0.0), F0);
-
-    vec3 kS = F;
-    vec3 kD = vec3(1.0) - kS;
-    kD *= 1.0 - Metallic;
-
-    vec3 numerator    = NDF * G * F;
-    float denominator = 4.0 * max(dot(normal, camDirection), 0.0) * max(dot(normal, L), 0.0);
-    vec3 specular     = numerator / max(denominator, 0.001);
-
-    // add to outgoing radiance Lo
-    float NdotL = max(dot(normal, L), 0.0);
-    vec3 radiance = lightColor * attenuation;
-    return (kD * Albedo / PI + specular) * radiance * NdotL;
+    return (kDiffuse * Albedo / PI + specular) * NdotL;
 }

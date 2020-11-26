@@ -1,6 +1,6 @@
 import REGL from "../web/regl.js";
 import resl2 from "../web/resl.js";
-import {createCamera} from "./lib/camera.js";
+import {Camera} from "./lib/camera.js";
 import bunny2 from "../web/bunny.js";
 import plane2 from "./models/plane.js";
 import {vec3} from "../web/gl-matrix.js";
@@ -9,7 +9,7 @@ import {cube as cube2} from "./models/cube.js";
 import {createStatsWidget} from "./ui/stats-widget.js";
 import {Model} from "./lib/model.js";
 import {debugLogger} from "./lib/shame.js";
-import {halfFloatTextureExt, queryTimerExt, textureFloatExt} from "./lib/cap.js";
+import {extDisjointTimerQuery, extDrawBuffers, extTextureFloat, extTextureFloatLinear, extTextureHalfFloat, extTextureHalfFloatLinear} from "./lib/cap.js";
 import {SpinController} from "./lib/controller.js";
 import {Mesh} from "./lib/mesh.js";
 import {InstancedMesh} from "./lib/instanced_mesh.js";
@@ -49,18 +49,21 @@ const loading = {
     main(assets);
   }
 };
+const useFBO = false;
 const main = (assets) => {
-  const regl2 = init();
-  const fbo = regl2.framebuffer({
-    color: regl2.texture({width: 1, height: 1, wrap: "clamp", format: "rgba", type: "half float"}),
+  const regl2 = init(!useFBO);
+  const fullScreenFBO = regl2.framebuffer({
+    color: regl2.texture({width: 1, height: 1, wrap: "clamp", format: "rgba", type: "half float", min: "nearest", mag: "nearest"}),
     depth: true,
     stencil: false
   });
+  const fbo = useFBO ? fullScreenFBO : null;
   const cubeMesh = new Mesh(cube2.positions, cube2.indices, cube2.normals);
   const planeMesh = new Mesh(plane2.positions, plane2.indices, plane2.normals);
   const bunnyMesh = new Mesh(bunny2.positions, bunny2.cells);
   const controls2 = new FPSControls(regl2._gl.canvas);
-  const camera2 = createCamera(regl2, controls2, {position: [0, 3, 10]});
+  const camera2 = new Camera(regl2, controls2, {position: [0, 3, 10]});
+  const cameraScope = camera2.draw();
   const lights = new Lights();
   lights.push(new DirectionalLight(regl2, 5, [1, 1, 0.5], [-1, 1, 1]));
   lights.push(new PointLight(regl2, 300, [1, 1, 0.8], [-3, 2, -3], 10));
@@ -114,7 +117,7 @@ const main = (assets) => {
   }
   const bunnyModels = new InstancedMesh(regl2, bunnyMesh, bunnyProps);
   const bunnyDraw = regl2(bunnyModels.config({}));
-  const planeModels = [new Model({albedo: [0.1, 0.1, 0.1], metallic: 0.1, roughness: 0.9}, [0, 0, 0], 20)];
+  const planeModels = [new Model({albedo: [0.1, 0.1, 0.1], metallic: 0.1, roughness: 0.9}, [0, 0, 0], 100)];
   const planes = new InstancedMesh(regl2, planeMesh, planeModels);
   const planeDraw = regl2(planes.config({}));
   const lightProps = [];
@@ -126,31 +129,37 @@ const main = (assets) => {
   const lightsI = new InstancedMesh(regl2, cubeMesh, lightProps);
   const lightBulbDraw = regl2(lightsI.config({}));
   const lightScope = regl2(lights.config());
-  const drawToneMap = regl2({
+  const drawFBO = regl2({
     frag: assets["tonemap.fsh"],
     vert: assets["screen.vsh"],
     attributes: {position: [-4, -4, 4, -4, 0, 4]},
     uniforms: {
-      tex: fbo
+      tex: fullScreenFBO,
+      wRcp: (context) => context.viewportWidth,
+      hRcp: (context) => context.viewportHeight
     },
     depth: {enable: false},
     count: 3
   });
   const drawCalls = [];
   pLightShadowDraws.forEach((n, i) => {
-    drawCalls.push([n, `drawDepth${i}`]);
+    drawCalls.push([n, `depth${i}`]);
   });
   drawCalls.push([mainDraw, "main"]);
   drawCalls.push([emissiveDraw, "emissive"]);
-  drawCalls.push([drawToneMap, "tone_map"]);
+  if (fbo !== null) {
+    drawCalls.push([drawFBO, "fbo"]);
+  }
   const statsWidget = createStatsWidget(drawCalls, regl2);
   let prevTime = 0;
   regl2.frame(({time, viewportWidth, viewportHeight}) => {
     const deltaTime = time - prevTime;
     prevTime = time;
     statsWidget.update(deltaTime);
+    camera2.update();
     bunnyModels.update();
-    fbo.resize(viewportWidth, viewportHeight);
+    bunnyModels.sort(camera2.position);
+    fbo?.resize(viewportWidth, viewportHeight);
     pLightShadowDraws.forEach((cmd) => {
       cmd(6, () => {
         regl2.clear({depth: 1});
@@ -158,7 +167,7 @@ const main = (assets) => {
         planeDraw();
       });
     });
-    camera2(() => {
+    cameraScope(() => {
       lightScope(() => {
         mainDraw(() => {
           regl2.clear({color: [0, 0, 0, 255], depth: 1});
@@ -170,27 +179,43 @@ const main = (assets) => {
         lightBulbDraw();
       });
     });
-    drawToneMap();
+    if (fbo !== null) {
+      drawFBO();
+    }
   });
 };
-const init = function() {
+const init = function(antialias = true) {
   const requestExtensions = [];
-  if (queryTimerExt()) {
-    requestExtensions.push("EXT_disjoint_timer_query");
+  if (extDisjointTimerQuery()) {
+    requestExtensions.push(extDisjointTimerQuery());
   }
-  if (halfFloatTextureExt()) {
-    requestExtensions.push(halfFloatTextureExt());
+  if (extTextureHalfFloat()) {
+    requestExtensions.push(extTextureHalfFloat());
   }
-  if (textureFloatExt()) {
-    requestExtensions.push(textureFloatExt());
+  if (extTextureHalfFloatLinear()) {
+    requestExtensions.push(extTextureHalfFloat());
   }
-  requestExtensions.push("oes_vertex_array_object");
+  if (extTextureFloat()) {
+    requestExtensions.push(extTextureFloat());
+  }
+  if (extTextureFloatLinear()) {
+    requestExtensions.push(extTextureFloatLinear());
+  }
+  if (extDrawBuffers()) {
+    requestExtensions.push(extDrawBuffers());
+  }
   requestExtensions.push("ANGLE_instanced_arrays");
+  requestExtensions.push("EXT_blend_minmax");
+  requestExtensions.push("OES_element_index_uint");
+  requestExtensions.push("OES_standard_derivatives");
+  requestExtensions.push("OES_vertex_array_object");
+  requestExtensions.push("WEBGL_debug_renderer_info");
+  requestExtensions.push("WEBGL_lose_context");
   return REGL({
     extensions: requestExtensions,
-    optionalExtensions: ["oes_texture_float_linear", "webgl_draw_buffers"],
+    optionalExtensions: ["webgl_draw_buffers"],
     profile: true,
-    attributes: {antialias: false}
+    attributes: {antialias}
   });
 };
 resl2(loading);

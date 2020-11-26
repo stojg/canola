@@ -1,4 +1,4 @@
-import {queryTimerExt} from "../lib/cap.js";
+import {extDisjointTimerQuery} from "../lib/cap.js";
 const getReadableFileSizeString = (fileSizeInBytes) => {
   let i = -1;
   const byteUnits = [" kB", " MB", " GB", " TB", "PB", "EB", "ZB", "YB"];
@@ -80,7 +80,7 @@ export function createStatsWidget(drawCalls, regl) {
         let totalGpu = 0;
         for (let i2 = 0; i2 < drawCalls.length; i2++) {
           drawCall = drawCalls[i2];
-          const gpuTime = queryTimerExt() ? round(avgGpuFrameTime[i2]) : "n/a";
+          const gpuTime = extDisjointTimerQuery() ? round(avgGpuFrameTime[i2]) : "n/a";
           println(drawCall[1] + " : " + round(avgGpuFrameTime[i2] + avgCpuFrameTime[i2]) + "ms (" + round(avgCpuFrameTime[i2]) + " | " + gpuTime + ")");
           totalCpu += avgCpuFrameTime[i2];
           totalGpu += avgGpuFrameTime[i2];

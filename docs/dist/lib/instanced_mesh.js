@@ -1,5 +1,6 @@
 import {Model} from "./model.js";
 import deepmerge2 from "../../web/deepmerge.js";
+import {mat4, vec3} from "../../web/gl-matrix.js";
 export class InstancedMesh {
   constructor(regl, mesh, models) {
     this.mesh = mesh;
@@ -18,10 +19,19 @@ export class InstancedMesh {
   }
   _updateBuffer() {
     const a = [];
-    this.models.forEach((l) => {
-      a.push(l.bufferData);
+    this.models.forEach((model2) => {
+      a.push(model2.bufferData);
     });
     this.buffer({data: a});
+  }
+  sort(fromPosition) {
+    this.models.sort((a, b) => {
+      const aPos = vec3.create();
+      const bPos = vec3.create();
+      mat4.getTranslation(aPos, a.model);
+      mat4.getTranslation(bPos, b.model);
+      return vec3.sqrDist(fromPosition, aPos) - vec3.sqrDist(fromPosition, bPos);
+    });
   }
 }
 //# sourceMappingURL=instanced_mesh.js.map
