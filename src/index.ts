@@ -125,7 +125,7 @@ const main = (assets: Record<string, string>) => {
   const y = 0.0
   const bunnyProps = []
 
-  const N = 3
+  const N = 5
   for (let x = 0; x < N; x++) {
     for (let z = 0; z < N; z++) {
       const pos: vec3 = [x * (20 / N) - 6.6, y, z * (20 / N) - 6.6]
@@ -147,7 +147,7 @@ const main = (assets: Record<string, string>) => {
   }
   const bunnyModels = new InstancedMesh(regl, bunnyMesh, bunnyProps)
   const bunnyDraw = regl(bunnyModels.config({}))
-  const planeModels = [new Model({ albedo: [0.1, 0.1, 0.1], metallic: 0.1, roughness: 0.9 }, [0, 0, 0], 20)]
+  const planeModels = [new Model({ albedo: [0.1, 0.1, 0.1], metallic: 0.1, roughness: 0.9 }, [0, 0, 0], 100)]
   const planes = new InstancedMesh(regl, planeMesh, planeModels)
   const planeDraw = regl(planes.config({}))
 
