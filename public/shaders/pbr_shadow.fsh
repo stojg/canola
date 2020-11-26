@@ -162,5 +162,5 @@ vec3 brdf(vec3 albedo, vec3 F0, vec3 N, vec3 L, vec3 V, float roughness) {
     float denominator = 4.0 * max(dot(N, V), 0.0) * max(dot(N, L), 0.0);
     vec3 specular = (NDF * G * F) / max(denominator, 0.001);
 
-    return (kDiffuse * Albedo / PI + specular) * NdotL;
+    return (kDiffuse * albedo / PI + specular) * NdotL;
 }

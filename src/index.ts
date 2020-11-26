@@ -40,6 +40,8 @@ let toLoad = {
   'shadow_dir.fsh': { type: 'text', src: 'shaders/shadow_dir.fsh' },
   'tonemap.fsh': { type: 'text', src: 'shaders/tonemap.fsh' },
   'screen.vsh': { type: 'text', src: 'shaders/screen.vsh' },
+  'texture.fsh': { type: 'text', src: 'shaders/texture.fsh' },
+  'texture.vsh': { type: 'text', src: 'shaders/texture.vsh' },
 }
 
 toLoad = Object.assign(toLoad)
@@ -92,6 +94,18 @@ const main = (assets: Record<string, string>) => {
     framebuffer: fbo,
   }
 
+  let textureConfig: REGL.DrawConfig = {
+    vert: assets['texture.vsh'],
+    frag: assets['texture.fsh'],
+    cull: { enable: true, face: 'back' as REGL.FaceOrientationType },
+    uniforms: {
+      ao: 0.001,
+      wRcp: (context: REGL.DefaultContext) => context.viewportWidth,
+      hRcp: (context: REGL.DefaultContext) => context.viewportHeight,
+    },
+    framebuffer: fbo,
+  }
+
   const emissiveDraw = regl({
     frag: assets['emissive.fsh'],
     vert: assets['main.vsh'],
@@ -104,8 +118,10 @@ const main = (assets: Record<string, string>) => {
     vert: assets['light_cube.vsh'],
     cull: { enable: true, face: 'back' as REGL.FaceOrientationType },
   }
-  const pLightShadowDraws: REGL.DrawCommand[] = []
-  lights.pointLightSetup(pLightShadowDraws, mainConfig, pointShadowConf)
+
+  const pLightShadowDraws = lights.getShadowDraws(pointShadowConf)
+  lights.setPointShadowUniforms(mainConfig)
+  lights.setPointShadowUniforms(textureConfig)
 
   const dirShadowConf = {
     frag: assets['shadow_dir.fsh'],
@@ -114,9 +130,10 @@ const main = (assets: Record<string, string>) => {
     uniforms: { ao: 0.001 },
   }
   const dirLightShadows: REGL.DrawCommand[] = []
-  lights.dirLightSetup(dirLightShadows, mainConfig, dirShadowConf)
+  lights.setDirShadowUniforms(dirLightShadows, mainConfig, dirShadowConf)
 
   const mainDraw = regl(mainConfig)
+  const textureDraw = regl(textureConfig)
 
   const ctrl = SpinController
   const up: vec3 = [0, 1, 0]
@@ -124,7 +141,7 @@ const main = (assets: Record<string, string>) => {
   const y = 0.0
   const bunnyProps = []
 
-  const N = 5
+  const N = 3
   for (let x = 0; x < N; x++) {
     for (let z = 0; z < N; z++) {
       const pos: vec3 = [x * (20 / N) - 6.6, y, z * (20 / N) - 6.6]
@@ -179,6 +196,7 @@ const main = (assets: Record<string, string>) => {
     drawCalls.push([n, `depth${i}`])
   })
   drawCalls.push([mainDraw, 'main'])
+  drawCalls.push([textureDraw, 'texture'])
   drawCalls.push([emissiveDraw, 'emissive'])
   if (fbo !== null) {
     drawCalls.push([drawFBO, 'fbo'])
@@ -209,10 +227,12 @@ const main = (assets: Record<string, string>) => {
     cameraScope(() => {
       lightScope(() => {
         mainDraw(() => {
-          // clear the fbo from last time
           regl.clear({ color: [0.0, 0.0, 0.0, 255], depth: 1 })
-          bunnyDraw()
           planeDraw()
+        })
+
+        textureDraw(() => {
+          bunnyDraw()
         })
       })
       emissiveDraw(() => {
