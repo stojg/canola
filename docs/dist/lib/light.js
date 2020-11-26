@@ -36,7 +36,16 @@ export class Lights {
   get(number) {
     return this.lights[number];
   }
-  pointLightSetup(pointLightShadows, mainConfig, shadowConf) {
+  getShadowDraws(shadowConf) {
+    const pointLightShadows = [];
+    this.forEach((l, i) => {
+      if (l instanceof PointLight && l.on) {
+        pointLightShadows.push(l.shadowDraw(shadowConf));
+      }
+    });
+    return pointLightShadows;
+  }
+  setPointShadowUniforms(mainConfig) {
     let pLights = 0;
     this.forEach((l, i) => {
       if (l instanceof PointLight) {
@@ -45,13 +54,10 @@ export class Lights {
         }
         mainConfig.uniforms[`pointLightShadows[${pLights}]`] = l.shadowFBO();
         pLights++;
-        if (l.on) {
-          pointLightShadows.push(l.shadowDraw(shadowConf));
-        }
       }
     });
   }
-  dirLightSetup(dirLightShadows, mainConfig, dirShadowConf) {
+  setDirShadowUniforms(dirLightShadows, mainConfig, dirShadowConf) {
   }
 }
 export class Light {

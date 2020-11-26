@@ -34,7 +34,9 @@ let toLoad = {
   "shadow_dir.vsh": {type: "text", src: "shaders/shadow_dir.vsh"},
   "shadow_dir.fsh": {type: "text", src: "shaders/shadow_dir.fsh"},
   "tonemap.fsh": {type: "text", src: "shaders/tonemap.fsh"},
-  "screen.vsh": {type: "text", src: "shaders/screen.vsh"}
+  "screen.vsh": {type: "text", src: "shaders/screen.vsh"},
+  "texture.fsh": {type: "text", src: "shaders/texture.fsh"},
+  "texture.vsh": {type: "text", src: "shaders/texture.vsh"}
 };
 toLoad = Object.assign(toLoad);
 const loading = {
@@ -77,6 +79,17 @@ const main = (assets) => {
     uniforms: {ao: 1e-3},
     framebuffer: fbo
   };
+  let textureConfig = {
+    vert: assets["texture.vsh"],
+    frag: assets["texture.fsh"],
+    cull: {enable: true, face: "back"},
+    uniforms: {
+      ao: 1e-3,
+      wRcp: (context) => context.viewportWidth,
+      hRcp: (context) => context.viewportHeight
+    },
+    framebuffer: fbo
+  };
   const emissiveDraw = regl2({
     frag: assets["emissive.fsh"],
     vert: assets["main.vsh"],
@@ -88,8 +101,9 @@ const main = (assets) => {
     vert: assets["light_cube.vsh"],
     cull: {enable: true, face: "back"}
   };
-  const pLightShadowDraws = [];
-  lights.pointLightSetup(pLightShadowDraws, mainConfig, pointShadowConf);
+  const pLightShadowDraws = lights.getShadowDraws(pointShadowConf);
+  lights.setPointShadowUniforms(mainConfig);
+  lights.setPointShadowUniforms(textureConfig);
   const dirShadowConf = {
     frag: assets["shadow_dir.fsh"],
     vert: assets["shadow_dir.vsh"],
@@ -97,14 +111,15 @@ const main = (assets) => {
     uniforms: {ao: 1e-3}
   };
   const dirLightShadows = [];
-  lights.dirLightSetup(dirLightShadows, mainConfig, dirShadowConf);
+  lights.setDirShadowUniforms(dirLightShadows, mainConfig, dirShadowConf);
   const mainDraw = regl2(mainConfig);
+  const textureDraw = regl2(textureConfig);
   const ctrl = SpinController;
   const up = [0, 1, 0];
   const scale = 0.2;
   const y = 0;
   const bunnyProps = [];
-  const N = 5;
+  const N = 3;
   for (let x = 0; x < N; x++) {
     for (let z = 0; z < N; z++) {
       const pos = [x * (20 / N) - 6.6, y, z * (20 / N) - 6.6];
@@ -146,6 +161,7 @@ const main = (assets) => {
     drawCalls.push([n, `depth${i}`]);
   });
   drawCalls.push([mainDraw, "main"]);
+  drawCalls.push([textureDraw, "texture"]);
   drawCalls.push([emissiveDraw, "emissive"]);
   if (fbo !== null) {
     drawCalls.push([drawFBO, "fbo"]);
@@ -171,8 +187,10 @@ const main = (assets) => {
       lightScope(() => {
         mainDraw(() => {
           regl2.clear({color: [0, 0, 0, 255], depth: 1});
-          bunnyDraw();
           planeDraw();
+        });
+        textureDraw(() => {
+          bunnyDraw();
         });
       });
       emissiveDraw(() => {
