@@ -2,6 +2,8 @@
 
 3D javascript game engine / personal sandbox
 
+https://stojg.github.io/canola/
+
 ## Available Scripts
 
 ### npm start
