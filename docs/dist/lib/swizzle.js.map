@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["/Users/stojg/Sites/canola/src/lib/swizzle.ts"],
-  "sourcesContent": ["import { vec3, vec4 } from 'gl-matrix'\n\nexport const xyz = (t: vec4) => vec3.fromValues(t[0], t[1], t[2])\n"],
-  "mappings": "AAAA;AAEO,aAAM,MAAM,OAAa,KAAK,WAAW,EAAE,IAAI,EAAE,IAAI,EAAE;",
-  "names": []
-}

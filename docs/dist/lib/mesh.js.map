@@ -1,7 +1,0 @@
-{
-  "version": 3,
-  "sources": ["/Users/stojg/Sites/canola/src/lib/mesh.ts"],
-  "sourcesContent": ["import type { vec3 } from 'gl-matrix'\nimport calcNormals from 'angle-normals'\nimport type REGL from 'regl'\nimport deepmerge from 'deepmerge'\n\nexport class Mesh {\n  vertices: vec3[] = []\n  indices: vec3[] = []\n  normals: vec3[] = []\n\n  constructor(vertices: vec3[], indices: vec3[], normals?: vec3[]) {\n    this.vertices = vertices\n    this.indices = indices\n    this.normals = normals || calcNormals(indices, vertices)\n  }\n\n  config(conf: REGL.DrawConfig): REGL.DrawConfig {\n    return deepmerge(conf, {\n      elements: this.indices,\n      attributes: {\n        position: this.vertices,\n        normal: this.normals,\n      },\n    })\n  }\n}\n"],
-  "mappings": "AACA;AAEA;AAHA;AAAA,EAUE,YAAY;AAJZ,oBAAmB;AACnB,mBAAkB;AAClB,mBAAkB;AAGhB,SAAK,WAAW;AAChB,SAAK,UAAU;AACf,SAAK,UAAU,WAAW,YAAY,SAAS;AAAA;AAAA,EAGjD;AACE,WAAO,WAAU,MAAM;AAAA,MACrB,UAAU,KAAK;AAAA,MACf,YAAY;AAAA,QACV,UAAU,KAAK;AAAA,QACf,QAAQ,KAAK;AAAA;AAAA;AAAA;AAAA;",
-  "names": []
-}
