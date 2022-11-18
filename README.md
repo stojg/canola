@@ -1,8 +1,8 @@
 # Canola
 
-3D javascript game engine / personal sandbox
+3D javascript game engine / personal sandbox using the excellent [regl](https://github.com/regl-project/regl) project as a wrapper around WebGL. 
 
-https://stojg.github.io/canola/
+The [website](https://stojg.github.io/canola/) displays a simple physically based rendering with lights and shadows, tonemapping etc.
 
 ## Available Scripts
 
